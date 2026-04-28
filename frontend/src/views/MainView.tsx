@@ -1,18 +1,19 @@
+import { useEffect, useState } from 'react'
+import AddCircleIcon from '@mui/icons-material/AddCircle'
+import CommentIcon from '@mui/icons-material/Comment'
 import {
   Box,
+  Checkbox,
   IconButton,
   List,
   ListItem,
   ListItemButton,
   ListItemIcon,
-  Checkbox,
   ListItemText,
 } from '@mui/material'
-import { useState, useEffect } from 'react'
-import CommentIcon from '@mui/icons-material/Comment'
-import useTasks from '../hooks/useApi'
-import AddCircleIcon from '@mui/icons-material/AddCircle'
+
 import AddItem from '../dialogs/AddItem'
+import useTasks from '../hooks/useApi'
 
 const MainView = () => {
   const [checked, setChecked] = useState<number[]>([])
@@ -38,11 +39,7 @@ const MainView = () => {
 
   return (
     <>
-      <AddItem
-        isOpen={isDialogOpen}
-        onClose={() => setDialogOpen(false)}
-        createTask={createTask}
-      />
+      <AddItem isOpen={isDialogOpen} onClose={() => setDialogOpen(false)} createTask={createTask} />
       <Box sx={{ maxWidth: 600, margin: '0 auto', mt: 4 }}>
         <List>
           {!loading &&
@@ -55,11 +52,7 @@ const MainView = () => {
                   </IconButton>
                 }
               >
-                <ListItemButton
-                  role={undefined}
-                  dense
-                  onClick={handleToggle(id)}
-                >
+                <ListItemButton role={undefined} dense onClick={handleToggle(id)}>
                   <ListItemIcon>
                     <Checkbox
                       edge="start"
@@ -72,10 +65,7 @@ const MainView = () => {
                       }}
                     />
                   </ListItemIcon>
-                  <ListItemText
-                    id={`checkbox-list-label-${id}`}
-                    primary={title}
-                  />
+                  <ListItemText id={`checkbox-list-label-${id}`} primary={title} />
                   <ListItemText
                     primary={status}
                     sx={{

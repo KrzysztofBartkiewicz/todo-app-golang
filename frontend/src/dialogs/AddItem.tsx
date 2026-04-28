@@ -1,13 +1,14 @@
+import { useState } from 'react';
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  TextField,
-  DialogActions,
   Button,
-} from '@mui/material'
-import type { Task } from '../hooks/useApi'
-import { useState } from 'react'
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  TextField,
+} from '@mui/material';
+
+import type { Task } from '../hooks/useApi';
 
 interface AddItemProps {
   isOpen: boolean
@@ -16,11 +17,11 @@ interface AddItemProps {
 }
 
 const AddItem = ({ isOpen, onClose, createTask }: AddItemProps) => {
-  const [title, setTitle] = useState('')
+  const [title, setTitle] = useState('');
   const handleAdd = () => {
-    createTask(title)
-    onClose()
-  }
+    createTask(title);
+    onClose();
+  };
 
   return (
     <Dialog open={isOpen} onClose={onClose}>
@@ -40,7 +41,7 @@ const AddItem = ({ isOpen, onClose, createTask }: AddItemProps) => {
         </Button>
       </DialogActions>
     </Dialog>
-  )
-}
+  );
+};
 
-export default AddItem
+export default AddItem;

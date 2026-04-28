@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useCallback, useState } from 'react'
 
 const API_URL = 'http://localhost:8080'
 
@@ -39,7 +39,7 @@ export const useTasks = () => {
         body: JSON.stringify({ title }),
       })
       const data = await res.json()
-      setTasks((prev) => [...prev, data])
+      setTasks(prev => [...prev, data])
       return data
     } catch (err) {
       setError('Error creating task')
@@ -49,28 +49,25 @@ export const useTasks = () => {
     }
   }, [])
 
-  const updateTask = useCallback(
-    async (id: number, data: { title?: string; status?: string }) => {
-      setLoading(true)
-      setError(null)
-      try {
-        const res = await fetch(`${API_URL}/tasks/${id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data),
-        })
-        const updated = await res.json()
-        setTasks((prev) => prev.map((t) => (t.id === id ? updated : t)))
-        return updated
-      } catch (err) {
-        setError('Error updating task')
-        console.error('Error updating task:', err)
-      } finally {
-        setLoading(false)
-      }
-    },
-    []
-  )
+  const updateTask = useCallback(async (id: number, data: { title?: string; status?: string }) => {
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await fetch(`${API_URL}/tasks/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      })
+      const updated = await res.json()
+      setTasks(prev => prev.map(t => (t.id === id ? updated : t)))
+      return updated
+    } catch (err) {
+      setError('Error updating task')
+      console.error('Error updating task:', err)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
   const deleteTask = useCallback(async (id: number) => {
     setLoading(true)
@@ -79,7 +76,7 @@ export const useTasks = () => {
       await fetch(`${API_URL}/tasks/${id}`, {
         method: 'DELETE',
       })
-      setTasks((prev) => prev.filter((t) => t.id !== id))
+      setTasks(prev => prev.filter(t => t.id !== id))
     } catch (err) {
       setError('Error deleting task')
       console.error('Error deleting task:', err)
