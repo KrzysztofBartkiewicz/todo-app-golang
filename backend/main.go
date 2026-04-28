@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"net/http"
+	"todo-app/backend/utils"
 )
 
 type Task struct {
@@ -20,10 +21,23 @@ func main() {
 	http.HandleFunc("/health", healthHandler)
 
 	http.HandleFunc("/tasks", handleTasks)
+	http.HandleFunc("/tasks/", handleTaskByID)
 
 	err := http.ListenAndServe(":8080", nil)
+
 	if err != nil {
 		panic(err)
+	}
+}
+
+func handleTaskByID(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodDelete:
+		deleteTask(w, r)
+	case http.MethodPatch:
+		updateTask(w, r)
+	default:
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 	}
 }
 
@@ -86,4 +100,63 @@ func createTask(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
 		return
 	}
+}
+
+func deleteTask(w http.ResponseWriter, r *http.Request) {
+	id, err := utils.GetTaskID(r)
+	if err != nil {
+		http.Error(w, "Invalid task id", http.StatusBadRequest)
+		return
+	}
+
+	for i, task := range tasks {
+		if task.ID == id {
+			tasks = append(tasks[:i], tasks[i+1:]...)
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+	}
+	http.Error(w, "Task not found", http.StatusNotFound)
+}
+
+type UpdateTaskRequest struct {
+	Title  *string `json:"title"`
+	Status *string `json:"status"`
+}
+
+func updateTask(w http.ResponseWriter, r *http.Request) {
+	id, err := utils.GetTaskID(r)
+	if err != nil {
+		http.Error(w, "Invalid task id", http.StatusBadRequest)
+		return
+	}
+
+	var req UpdateTaskRequest
+
+	err = json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		http.Error(w, "Invalid JSON body", http.StatusBadRequest)
+		return
+	}
+
+	for i, task := range tasks {
+		if task.ID == id {
+			if req.Title != nil {
+				tasks[i].Title = *req.Title
+			}
+
+			if req.Status != nil {
+				tasks[i].Status = *req.Status
+			}
+
+			w.Header().Set("Content-Type", "application/json")
+			err := json.NewEncoder(w).Encode(tasks[i])
+			if err != nil {
+				http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+			}
+			return
+		}
+	}
+
+	http.Error(w, "Task not found", http.StatusNotFound)
 }
