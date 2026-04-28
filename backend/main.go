@@ -17,11 +17,26 @@ var tasks = []Task{
 	{ID: 2, Title: "Task 2", Status: "completed"},
 }
 
-func main() {
-	http.HandleFunc("/health", healthHandler)
+func withCORS(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 
-	http.HandleFunc("/tasks", handleTasks)
-	http.HandleFunc("/tasks/", handleTaskByID)
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
+		next(w, r)
+	}
+}
+
+func main() {
+	http.HandleFunc("/health", withCORS(healthHandler))
+
+	http.HandleFunc("/tasks", withCORS(handleTasks))
+	http.HandleFunc("/tasks/", withCORS(handleTaskByID))
 
 	err := http.ListenAndServe(":8080", nil)
 
