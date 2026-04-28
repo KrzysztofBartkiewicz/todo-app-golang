@@ -7,34 +7,50 @@ import (
 	"strings"
 )
 
-func HandleTasks(w http.ResponseWriter, r *http.Request) {
+type Handler struct {
+	repo *Repository
+}
+
+func NewHandler(repo *Repository) *Handler {
+	return &Handler{repo: repo}
+}
+
+func (h *Handler) HandleTasks(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		getTasks(w)
+		h.getTasks(w)
 	case http.MethodPost:
-		createTask(w, r)
+		h.createTask(w, r)
 	default:
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 	}
 }
 
-func HandleTaskByID(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) HandleTaskByID(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodDelete:
-		deleteTask(w, r)
+		h.deleteTask(w, r)
 	case http.MethodPatch:
-		updateTask(w, r)
+		h.updateTask(w, r)
 	default:
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 	}
 }
 
-func getTasks(w http.ResponseWriter) {
+func (h *Handler) getTasks(w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(GetAll())
+	tasks, err := h.repo.GetAll()
+	if err != nil {
+		http.Error(w, "Failed to get tasks", http.StatusInternalServerError)
+		return
+	}
+	err = json.NewEncoder(w).Encode(tasks)
+	if err != nil {
+		http.Error(w, "Failed to encode tasks", http.StatusInternalServerError)
+	}
 }
 
-func createTask(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) createTask(w http.ResponseWriter, r *http.Request) {
 	var newTask Task
 
 	err := json.NewDecoder(r.Body).Decode(&newTask)
@@ -48,21 +64,24 @@ func createTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	createdTask := Create(newTask)
+	createdTask := h.repo.Create(newTask)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(createdTask)
+	err = json.NewEncoder(w).Encode(createdTask)
+	if err != nil {
+		http.Error(w, "Failed to encode task", http.StatusInternalServerError)
+	}
 }
 
-func deleteTask(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) deleteTask(w http.ResponseWriter, r *http.Request) {
 	id, err := getTaskID(r)
 	if err != nil {
 		http.Error(w, "Invalid task id", http.StatusBadRequest)
 		return
 	}
 
-	err = Delete(id)
+	err = h.repo.Delete(id)
 	if err != nil {
 		http.Error(w, "Task not found", http.StatusNotFound)
 		return
@@ -71,7 +90,7 @@ func deleteTask(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func updateTask(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) updateTask(w http.ResponseWriter, r *http.Request) {
 	id, err := getTaskID(r)
 	if err != nil {
 		http.Error(w, "Invalid task id", http.StatusBadRequest)
@@ -86,14 +105,17 @@ func updateTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	updatedTask, err := Update(id, req)
+	updatedTask, err := h.repo.Update(id, req)
 	if err != nil {
 		http.Error(w, "Task not found", http.StatusNotFound)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(updatedTask)
+	err = json.NewEncoder(w).Encode(updatedTask)
+	if err != nil {
+		http.Error(w, "Failed to encode task", http.StatusInternalServerError)
+	}
 }
 
 func getTaskID(r *http.Request) (int, error) {

@@ -5,7 +5,8 @@ import (
 	"todo-app/backend/internal/task"
 )
 
-func RegisterRoutes() {
-	http.HandleFunc("/tasks", WithCORS(task.HandleTasks))
-	http.HandleFunc("/tasks/", WithCORS(task.HandleTaskByID))
+func RegisterRoutes(repo *task.Repository) {
+	handler := task.NewHandler(repo)
+	http.HandleFunc("/tasks", WithCORS(handler.HandleTasks))
+	http.HandleFunc("/tasks/", WithCORS(handler.HandleTaskByID))
 }

@@ -3,15 +3,26 @@ package main
 import (
 	"encoding/json"
 	"net/http"
+	"todo-app/backend/internal/database"
 	"todo-app/backend/internal/server"
+	"todo-app/backend/internal/task"
 )
 
 func main() {
+	db, err := database.Open()
+	if err != nil {
+		panic(err)
+	}
+
+	defer db.Close()
+
+	repo := task.NewRepository(db)
+
 	http.HandleFunc("/health", server.WithCORS(healthHandler))
 
-	server.RegisterRoutes()
+	server.RegisterRoutes(repo)
 
-	err := http.ListenAndServe(":8080", nil)
+	err = http.ListenAndServe(":8080", nil)
 	if err != nil {
 		panic(err)
 	}
