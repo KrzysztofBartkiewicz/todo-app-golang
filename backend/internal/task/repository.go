@@ -5,6 +5,13 @@ import (
 	"errors"
 )
 
+type TaskRepository interface {
+	Create(task Task) (Task, error)
+	GetAll() ([]Task, error)
+	Delete(id int) error
+	Update(id int, req UpdateTaskRequest) (Task, error)
+}
+
 type Repository struct {
 	db *sql.DB
 }
@@ -36,23 +43,23 @@ func (r *Repository) GetAll() ([]Task, error) {
 	return tasks, nil
 }
 
-func (r *Repository) Create(newTask Task) Task {
+func (r *Repository) Create(newTask Task) (Task, error) {
 	if newTask.Status == "" {
 		newTask.Status = "todo"
 	}
 
 	result, err := r.db.Exec("INSERT INTO tasks (title, status) VALUES (?, ?)", newTask.Title, newTask.Status)
 	if err != nil {
-		return Task{}
+		return Task{}, err
 	}
 
 	id, err := result.LastInsertId()
 	if err != nil {
-		return Task{}
+		return Task{}, err
 	}
 
 	newTask.ID = int(id)
-	return newTask
+	return newTask, nil
 }
 
 func (r *Repository) Delete(id int) error {

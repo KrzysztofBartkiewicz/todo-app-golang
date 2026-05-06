@@ -8,10 +8,10 @@ import (
 )
 
 type Handler struct {
-	repo *Repository
+	repo TaskRepository
 }
 
-func NewHandler(repo *Repository) *Handler {
+func NewHandler(repo TaskRepository) *Handler {
 	return &Handler{repo: repo}
 }
 
@@ -64,7 +64,11 @@ func (h *Handler) createTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	createdTask := h.repo.Create(newTask)
+	createdTask, err := h.repo.Create(newTask)
+	if err != nil {
+		http.Error(w, "Failed to create task", http.StatusInternalServerError)
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
