@@ -2,6 +2,7 @@ package task
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 	"strings"
@@ -22,7 +23,7 @@ func (h *Handler) HandleTasks(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPost:
 		h.createTask(w, r)
 	default:
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		writeJSONError(w, http.StatusMethodNotAllowed, "Method not allowed")
 	}
 }
 
@@ -33,21 +34,18 @@ func (h *Handler) HandleTaskByID(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPatch:
 		h.updateTask(w, r)
 	default:
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		writeJSONError(w, http.StatusMethodNotAllowed, "Method not allowed")
 	}
 }
 
 func (h *Handler) getTasks(w http.ResponseWriter) {
-	w.Header().Set("Content-Type", "application/json")
 	tasks, err := h.repo.GetAll()
 	if err != nil {
-		http.Error(w, "Failed to get tasks", http.StatusInternalServerError)
+		writeJSONError(w, http.StatusInternalServerError, "Failed to fetch tasks")
 		return
 	}
-	err = json.NewEncoder(w).Encode(tasks)
-	if err != nil {
-		http.Error(w, "Failed to encode tasks", http.StatusInternalServerError)
-	}
+
+	writeJSON(w, http.StatusOK, tasks)
 }
 
 func (h *Handler) createTask(w http.ResponseWriter, r *http.Request) {
@@ -55,39 +53,38 @@ func (h *Handler) createTask(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&newTask)
 	if err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		writeJSONError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
 	if newTask.Title == "" {
-		http.Error(w, "Missing title", http.StatusBadRequest)
+		writeJSONError(w, http.StatusBadRequest, "Missing title")
 		return
 	}
 
 	createdTask, err := h.repo.Create(newTask)
 	if err != nil {
-		http.Error(w, "Failed to create task", http.StatusInternalServerError)
+		writeJSONError(w, http.StatusInternalServerError, "Failed to create task")
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	err = json.NewEncoder(w).Encode(createdTask)
-	if err != nil {
-		http.Error(w, "Failed to encode task", http.StatusInternalServerError)
-	}
+	writeJSON(w, http.StatusCreated, createdTask)
 }
 
 func (h *Handler) deleteTask(w http.ResponseWriter, r *http.Request) {
 	id, err := getTaskID(r)
 	if err != nil {
-		http.Error(w, "Invalid task id", http.StatusBadRequest)
+		writeJSONError(w, http.StatusBadRequest, "Invalid task id")
 		return
 	}
 
 	err = h.repo.Delete(id)
 	if err != nil {
-		http.Error(w, "Task not found", http.StatusNotFound)
+		if errors.Is(err, ErrTaskNotFound) {
+			writeJSONError(w, http.StatusNotFound, "Task not found")
+			return
+		}
+		writeJSONError(w, http.StatusInternalServerError, "Failed to delete task")
 		return
 	}
 
@@ -97,7 +94,7 @@ func (h *Handler) deleteTask(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) updateTask(w http.ResponseWriter, r *http.Request) {
 	id, err := getTaskID(r)
 	if err != nil {
-		http.Error(w, "Invalid task id", http.StatusBadRequest)
+		writeJSONError(w, http.StatusBadRequest, "Invalid task id")
 		return
 	}
 
@@ -105,21 +102,22 @@ func (h *Handler) updateTask(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		http.Error(w, "Invalid JSON body", http.StatusBadRequest)
+		writeJSONError(w, http.StatusBadRequest, "Invalid JSON body")
 		return
 	}
 
 	updatedTask, err := h.repo.Update(id, req)
 	if err != nil {
-		http.Error(w, "Task not found", http.StatusNotFound)
+		if errors.Is(err, ErrTaskNotFound) {
+			writeJSONError(w, http.StatusNotFound, "Task not found")
+			return
+		}
+
+		writeJSONError(w, http.StatusInternalServerError, "Failed to update task")
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(updatedTask)
-	if err != nil {
-		http.Error(w, "Failed to encode task", http.StatusInternalServerError)
-	}
+	writeJSON(w, http.StatusOK, updatedTask)
 }
 
 func getTaskID(r *http.Request) (int, error) {

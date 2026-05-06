@@ -5,6 +5,8 @@ import (
 	"errors"
 )
 
+var ErrTaskNotFound = errors.New("task not found")
+
 type TaskRepository interface {
 	Create(task Task) (Task, error)
 	GetAll() ([]Task, error)
@@ -74,7 +76,7 @@ func (r *Repository) Delete(id int) error {
 	}
 
 	if rowsAffected == 0 {
-		return errors.New("task not found")
+		return ErrTaskNotFound
 	}
 
 	return nil
@@ -85,7 +87,7 @@ func (r *Repository) Update(id int, req UpdateTaskRequest) (Task, error) {
 	err := r.db.QueryRow("SELECT id, title, status FROM tasks WHERE id = ?", id).Scan(&updatedTask.ID, &updatedTask.Title, &updatedTask.Status)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return Task{}, errors.New("task not found")
+			return Task{}, ErrTaskNotFound
 		}
 		return Task{}, err
 	}
