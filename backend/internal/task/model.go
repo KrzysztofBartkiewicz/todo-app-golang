@@ -10,3 +10,12 @@ type UpdateTaskRequest struct {
 	Title  *string `json:"title"`
 	Status *string `json:"status"`
 }
+
+func isValidStatus(status string) bool {
+	switch status {
+	case "todo", "in_progress", "done":
+		return true
+	default:
+		return false
+	}
+}

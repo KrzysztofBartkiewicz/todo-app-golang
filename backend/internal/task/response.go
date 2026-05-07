@@ -23,3 +23,7 @@ func writeJSONError(w http.ResponseWriter, statusCode int, message string) {
 		Error: message,
 	})
 }
+
+func writeNoContent(w http.ResponseWriter) {
+	w.WriteHeader(http.StatusNoContent)
+}

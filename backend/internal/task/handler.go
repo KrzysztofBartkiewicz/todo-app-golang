@@ -51,14 +51,25 @@ func (h *Handler) getTasks(w http.ResponseWriter) {
 func (h *Handler) createTask(w http.ResponseWriter, r *http.Request) {
 	var newTask Task
 
-	err := json.NewDecoder(r.Body).Decode(&newTask)
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+
+	err := decoder.Decode(&newTask)
+
 	if err != nil {
 		writeJSONError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
+	newTask.Title = strings.TrimSpace(newTask.Title)
+
 	if newTask.Title == "" {
 		writeJSONError(w, http.StatusBadRequest, "Missing title")
+		return
+	}
+
+	if !isValidStatus(newTask.Status) && newTask.Status != "" {
+		writeJSONError(w, http.StatusBadRequest, "Invalid status")
 		return
 	}
 
@@ -88,7 +99,7 @@ func (h *Handler) deleteTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	writeNoContent(w)
 }
 
 func (h *Handler) updateTask(w http.ResponseWriter, r *http.Request) {
@@ -100,10 +111,33 @@ func (h *Handler) updateTask(w http.ResponseWriter, r *http.Request) {
 
 	var req UpdateTaskRequest
 
-	err = json.NewDecoder(r.Body).Decode(&req)
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+
+	err = decoder.Decode(&req)
+
 	if err != nil {
 		writeJSONError(w, http.StatusBadRequest, "Invalid JSON body")
 		return
+	}
+
+	if req.Title == nil && req.Status == nil {
+		writeJSONError(w, http.StatusBadRequest, "No fields to update")
+		return
+	}
+
+	if req.Status != nil && !isValidStatus(*req.Status) {
+		writeJSONError(w, http.StatusBadRequest, "Invalid status")
+		return
+	}
+
+	if req.Title != nil {
+		*req.Title = strings.TrimSpace(*req.Title)
+
+		if *req.Title == "" {
+			writeJSONError(w, http.StatusBadRequest, "Missing title")
+			return
+		}
 	}
 
 	updatedTask, err := h.repo.Update(id, req)
