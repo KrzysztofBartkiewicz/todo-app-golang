@@ -23,7 +23,7 @@ func Open() (*sql.DB, error) {
 func createTables(db *sql.DB) error {
 	_, err := db.Exec(`
 		CREATE TABLE IF NOT EXISTS tasks (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id INTEGER PRIMARY KEY,
 			title TEXT NOT NULL,
 			status TEXT NOT NULL
 		)

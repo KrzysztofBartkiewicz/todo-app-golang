@@ -137,12 +137,6 @@ export const createAppTheme = (mode: 'light' | 'dark') =>
           rounded: {
             borderRadius: 10,
           },
-          elevation1: ({ theme }) => ({
-            boxShadow:
-              theme.palette.mode === 'dark'
-                ? 'none'
-                : '0 2px 6px rgba(0, 0, 0, 0.16)',
-          }),
         },
       },
 

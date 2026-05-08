@@ -1,28 +1,20 @@
-import { useEffect, useState } from 'react'
-import { getTasksList } from '../api'
 import { Box, IconButton, SvgIcon, Typography } from '@mui/material'
 import DarkModeOutlinedIcon from '@mui/icons-material/DarkModeOutlined'
 import LightModeOutlinedIcon from '@mui/icons-material/LightModeOutlined'
-import { useAtom } from 'jotai'
-import { appModeAtom } from '../state/state'
-
-interface Task {
-  id: number
-  title: string
-  status: 'todo' | 'in_progress' | 'done'
-}
+import { useAtom, useSetAtom } from 'jotai'
+import { appModeAtom, fetchTasksAtom } from '../state/state'
+import ItemsList from '../components/ItemsList'
+import { useEffect } from 'react'
+import AddTaskInput from '../components/AddTaskInput'
 
 const MainView = () => {
   const [appMode, setAppMode] = useAtom(appModeAtom)
-  const [tasks, setTasks] = useState<Task[]>([])
+
+  const fetchTasks = useSetAtom(fetchTasksAtom)
 
   useEffect(() => {
-    const fetchTasks = async () => {
-      const tasks = await getTasksList()
-      setTasks(tasks)
-    }
     fetchTasks()
-  }, [])
+  }, [fetchTasks])
 
   return (
     <Box>
@@ -47,26 +39,16 @@ const MainView = () => {
           </SvgIcon>
         </IconButton>
       </Box>
-      <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'center', mb: '20px' }}>
         <Typography variant="h1" component="h1">
           My Tasks
         </Typography>
       </Box>
 
-      {tasks.map((task) => (
-        <Box
-          key={task.id}
-          sx={{
-            mb: '10px',
-            p: '10px',
-            border: '1px solid #ccc',
-            borderRadius: '4px',
-          }}
-        >
-          <h3>{task.title}</h3>
-          <p>Status: {task.status}</p>
-        </Box>
-      ))}
+      <Box sx={{ maxWidth: '600px', mx: 'auto' }}>
+        <AddTaskInput />
+        <ItemsList />
+      </Box>
     </Box>
   )
 }

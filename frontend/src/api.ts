@@ -1,3 +1,5 @@
+import type { Task } from './interfaces/app'
+
 const API_URL = 'http://localhost:8080'
 const contentType = 'application/json'
 
@@ -25,13 +27,13 @@ export const deleteTask = async (id: number) => {
   })
 }
 
-export const updateTask = async (id: number, title: string) => {
+export const updateTask = async (id: number, title: string, status: Task['status']) => {
   const response = await fetch(`${API_URL}/tasks/${id}`, {
     method: 'PATCH',
     headers: {
       'Content-Type': contentType,
     },
-    body: JSON.stringify({ title }),
+    body: JSON.stringify({ title, status }),
   })
   return response.json()
 }
