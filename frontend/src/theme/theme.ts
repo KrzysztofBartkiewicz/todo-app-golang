@@ -26,7 +26,7 @@ export const createAppTheme = (mode: 'light' | 'dark') =>
     },
 
     typography: {
-      fontFamily: `'Inter', 'Roboto', 'Arial', sans-serif`,
+      fontFamily: `'Lato', 'Inter', 'Roboto', 'Arial', sans-serif`,
       h1: {
         fontSize: '2.25rem',
         fontWeight: 700,
