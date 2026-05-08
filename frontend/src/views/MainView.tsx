@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react'
 import { getTasksList } from '../api'
-import { Box } from '@mui/material'
+import { Box, IconButton, SvgIcon, Typography } from '@mui/material'
+import DarkModeOutlinedIcon from '@mui/icons-material/DarkModeOutlined'
+import LightModeOutlinedIcon from '@mui/icons-material/LightModeOutlined'
+import { useAtom } from 'jotai'
+import { appModeAtom } from '../state/state'
 
 interface Task {
   id: number
@@ -9,6 +13,7 @@ interface Task {
 }
 
 const MainView = () => {
+  const [appMode, setAppMode] = useAtom(appModeAtom)
   const [tasks, setTasks] = useState<Task[]>([])
 
   useEffect(() => {
@@ -20,7 +25,34 @@ const MainView = () => {
   }, [])
 
   return (
-    <Box sx={{ p: '30px' }}>
+    <Box>
+      <Box
+        sx={{
+          padding: '20px 40px',
+          display: 'flex',
+          justifyContent: 'flex-end',
+        }}
+      >
+        <IconButton
+          onClick={() =>
+            setAppMode((prev) => (prev === 'light' ? 'dark' : 'light'))
+          }
+        >
+          <SvgIcon fontSize="large">
+            {appMode === 'light' ? (
+              <DarkModeOutlinedIcon />
+            ) : (
+              <LightModeOutlinedIcon />
+            )}
+          </SvgIcon>
+        </IconButton>
+      </Box>
+      <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+        <Typography variant="h1" component="h1">
+          My Tasks
+        </Typography>
+      </Box>
+
       {tasks.map((task) => (
         <Box
           key={task.id}

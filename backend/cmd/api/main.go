@@ -8,6 +8,8 @@ import (
 	"todo-app/backend/internal/task"
 )
 
+const port string = ":8080"
+
 func main() {
 	db, err := database.Open()
 	if err != nil {
@@ -22,7 +24,9 @@ func main() {
 
 	server.RegisterRoutes(repo)
 
-	err = http.ListenAndServe(":8080", nil)
+	println("Server running on http://localhost" + port)
+
+	err = http.ListenAndServe(port, nil)
 	if err != nil {
 		panic(err)
 	}

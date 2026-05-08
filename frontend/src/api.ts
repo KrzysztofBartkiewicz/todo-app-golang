@@ -27,7 +27,7 @@ export const deleteTask = async (id: number) => {
 
 export const updateTask = async (id: number, title: string) => {
   const response = await fetch(`${API_URL}/tasks/${id}`, {
-    method: 'PUT',
+    method: 'PATCH',
     headers: {
       'Content-Type': contentType,
     },
