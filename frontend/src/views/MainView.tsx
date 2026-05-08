@@ -1,16 +1,19 @@
 import { Box, IconButton, SvgIcon, Typography } from '@mui/material'
 import DarkModeOutlinedIcon from '@mui/icons-material/DarkModeOutlined'
 import LightModeOutlinedIcon from '@mui/icons-material/LightModeOutlined'
-import { useAtom, useSetAtom } from 'jotai'
-import { appModeAtom, fetchTasksAtom } from '../state/state'
+import { useAtom, useAtomValue, useSetAtom } from 'jotai'
+import { appModeAtom, fetchTasksAtom, tasksAtom } from '../state/state'
 import ItemsList from '../components/ItemsList'
 import { useEffect } from 'react'
 import AddTaskInput from '../components/AddTaskInput'
+import EmptyState from '../components/EmptyState'
 
 const MainView = () => {
   const [appMode, setAppMode] = useAtom(appModeAtom)
-
+  const tasks = useAtomValue(tasksAtom)
   const fetchTasks = useSetAtom(fetchTasksAtom)
+
+  const isEmpty = tasks.length === 0
 
   useEffect(() => {
     fetchTasks()
@@ -25,17 +28,9 @@ const MainView = () => {
           justifyContent: 'flex-end',
         }}
       >
-        <IconButton
-          onClick={() =>
-            setAppMode((prev) => (prev === 'light' ? 'dark' : 'light'))
-          }
-        >
+        <IconButton onClick={() => setAppMode((prev) => (prev === 'light' ? 'dark' : 'light'))}>
           <SvgIcon fontSize="large">
-            {appMode === 'light' ? (
-              <DarkModeOutlinedIcon />
-            ) : (
-              <LightModeOutlinedIcon />
-            )}
+            {appMode === 'light' ? <DarkModeOutlinedIcon /> : <LightModeOutlinedIcon />}
           </SvgIcon>
         </IconButton>
       </Box>
@@ -47,8 +42,10 @@ const MainView = () => {
 
       <Box sx={{ maxWidth: '600px', mx: 'auto' }}>
         <AddTaskInput />
-        <ItemsList />
+        {!isEmpty && <ItemsList />}
       </Box>
+      <Box></Box>
+      {isEmpty && <EmptyState />}
     </Box>
   )
 }
