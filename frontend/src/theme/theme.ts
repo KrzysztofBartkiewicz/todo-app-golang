@@ -67,8 +67,7 @@ export const createAppTheme = (mode: 'light' | 'dark') =>
           paper: ({ theme }) => ({
             width: 280,
             borderRight: 'none',
-            backgroundColor:
-              theme.palette.mode === 'dark' ? '#1E293B' : '#FFFFFF',
+            backgroundColor: theme.palette.mode === 'dark' ? '#1E293B' : '#FFFFFF',
             color: theme.palette.text.primary,
           }),
         },
@@ -85,12 +84,10 @@ export const createAppTheme = (mode: 'light' | 'dark') =>
             fontSize: '1rem',
           },
           contained: ({ theme }) => ({
-            backgroundColor:
-              theme.palette.mode === 'dark' ? '#64748B' : '#000000',
+            backgroundColor: theme.palette.mode === 'dark' ? '#64748B' : '#000000',
             color: '#FFFFFF',
             '&:hover': {
-              backgroundColor:
-                theme.palette.mode === 'dark' ? '#475569' : '#1F2937',
+              backgroundColor: theme.palette.mode === 'dark' ? '#475569' : '#1F2937',
             },
           }),
         },
@@ -106,12 +103,8 @@ export const createAppTheme = (mode: 'light' | 'dark') =>
         styleOverrides: {
           root: ({ theme }) => ({
             borderRadius: 10,
-            backgroundColor:
-              theme.palette.mode === 'dark' ? '#334155' : '#FFFFFF',
-            boxShadow:
-              theme.palette.mode === 'dark'
-                ? 'none'
-                : '0 2px 6px rgba(0, 0, 0, 0.12)',
+            backgroundColor: theme.palette.mode === 'dark' ? '#334155' : '#FFFFFF',
+            boxShadow: theme.palette.mode === 'dark' ? 'none' : '0 2px 6px rgba(0, 0, 0, 0.12)',
           }),
           input: ({ theme }) => ({
             color: theme.palette.text.primary,
@@ -130,8 +123,7 @@ export const createAppTheme = (mode: 'light' | 'dark') =>
         styleOverrides: {
           root: ({ theme }) => ({
             backgroundImage: 'none',
-            backgroundColor:
-              theme.palette.mode === 'dark' ? '#1E293B' : '#FFFFFF',
+            backgroundColor: theme.palette.mode === 'dark' ? '#1E293B' : '#FFFFFF',
             color: theme.palette.text.primary,
           }),
           rounded: {
@@ -148,13 +140,11 @@ export const createAppTheme = (mode: 'light' | 'dark') =>
             color: theme.palette.text.primary,
 
             '&.Mui-selected': {
-              backgroundColor:
-                theme.palette.mode === 'dark' ? '#F8FAFC' : '#F3F4F6',
+              backgroundColor: theme.palette.mode === 'dark' ? '#F8FAFC' : '#F3F4F6',
               color: '#111827',
 
               '&:hover': {
-                backgroundColor:
-                  theme.palette.mode === 'dark' ? '#F8FAFC' : '#F3F4F6',
+                backgroundColor: theme.palette.mode === 'dark' ? '#F8FAFC' : '#F3F4F6',
               },
             },
           }),

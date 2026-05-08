@@ -10,12 +10,7 @@ interface ConfirmDeleteProps {
   taskTitle?: Task['title']
 }
 
-const ConfirmDelete = ({
-  open,
-  onClose,
-  taskId,
-  taskTitle,
-}: ConfirmDeleteProps) => {
+const ConfirmDelete = ({ open, onClose, taskId, taskTitle }: ConfirmDeleteProps) => {
   const deleteTask = useSetAtom(deleteTaskAtom)
 
   if (taskId == null) return null
@@ -26,9 +21,7 @@ const ConfirmDelete = ({
       onClose={onClose}
       slotProps={{ paper: { sx: { padding: '20px', textAlign: 'center' } } }}
     >
-      <Typography component="h2">
-        Are you sure you want to delete task?
-      </Typography>
+      <Typography component="h2">Are you sure you want to delete task?</Typography>
       <Typography variant="subtitle1">
         <b>{`${taskTitle}`}</b>
       </Typography>

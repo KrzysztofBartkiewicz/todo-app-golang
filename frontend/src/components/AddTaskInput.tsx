@@ -9,6 +9,11 @@ const AddTaskInput = () => {
 
   return (
     <Box
+      component="form"
+      onSubmit={(e) => {
+        e.preventDefault()
+        createTask()
+      }}
       sx={{
         display: 'flex',
         justifyContent: 'center',
@@ -23,12 +28,7 @@ const AddTaskInput = () => {
           onChange={(e) => setTaskTitle(e.target.value)}
         />
       </Box>
-      <Button
-        variant="contained"
-        startIcon={<AddRoundedIcon />}
-        sx={{ ml: '20px' }}
-        onClick={() => createTask()}
-      >
+      <Button type="submit" variant="contained" startIcon={<AddRoundedIcon />} sx={{ ml: '20px' }}>
         Add
       </Button>
     </Box>
