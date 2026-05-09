@@ -2,15 +2,12 @@ import { Box, Button, TextField } from '@mui/material'
 import { useState } from 'react'
 import { login, register } from '../api'
 import { useNavigate } from 'react-router'
-import { useSetAtom } from 'jotai'
-import { userNameAtom } from '../state/user'
 import { useAuth } from '../auth/AuthProvider'
 
 const LoginView = () => {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const navigate = useNavigate()
-  const setUserName = useSetAtom(userNameAtom)
   const { login: setAuthToken } = useAuth()
 
   return (
@@ -49,7 +46,6 @@ const LoginView = () => {
             try {
               const data = await login(username, password)
               setAuthToken(data.token)
-              setUserName(username)
               navigate('/')
             } catch (error) {
               console.error('Login failed:', error)

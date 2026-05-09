@@ -11,12 +11,15 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
-const getTokenExpMs = (token: string): number | null => {
+const decodeToken = (token: string): { expMs: number | null; username: string | null } => {
   try {
     const payload = JSON.parse(atob(token.split('.')[1]))
-    return typeof payload.exp === 'number' ? payload.exp * 1000 : null
+    return {
+      expMs: typeof payload.exp === 'number' ? payload.exp * 1000 : null,
+      username: typeof payload.username === 'string' ? payload.username : null,
+    }
   } catch {
-    return null
+    return { expMs: null, username: null }
   }
 }
 
@@ -37,7 +40,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     if (!token) return
-    const expMs = getTokenExpMs(token)
+    const { expMs, username } = decodeToken(token)
+    setUserName(username)
     if (!expMs) return
     const remaining = expMs - Date.now()
     if (remaining <= 0) {
@@ -48,7 +52,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       window.dispatchEvent(new Event('auth:expired'))
     }, remaining)
     return () => clearTimeout(timer)
-  }, [token])
+  }, [token, setUserName])
 
   return <AuthContext.Provider value={{ token, login, logout }}>{children}</AuthContext.Provider>
 }
