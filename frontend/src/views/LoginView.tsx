@@ -1,17 +1,54 @@
-import { Box, Button, TextField } from '@mui/material'
+import { Alert, Box, Button, Snackbar, TextField } from '@mui/material'
 import { useState } from 'react'
 import { login, register } from '../api'
 import { useNavigate } from 'react-router'
-import { useAuth } from '../auth/AuthProvider'
+import { useSetAtom } from 'jotai'
+import { tokenAtom } from '../state/auth'
 
 const LoginView = () => {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
   const navigate = useNavigate()
-  const { login: setAuthToken } = useAuth()
+  const setToken = useSetAtom(tokenAtom)
+
+  const submitLogin = async () => {
+    setBusy(true)
+    setError(null)
+    try {
+      const { token } = await login(username, password)
+      setToken(token)
+      navigate('/')
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Login failed')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const submitRegister = async () => {
+    setBusy(true)
+    setError(null)
+    try {
+      await register(username, password)
+      const { token } = await login(username, password)
+      setToken(token)
+      navigate('/')
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Registration failed')
+    } finally {
+      setBusy(false)
+    }
+  }
 
   return (
     <Box
+      component="form"
+      onSubmit={(e) => {
+        e.preventDefault()
+        submitLogin()
+      }}
       sx={{
         display: 'flex',
         flexDirection: 'column',
@@ -23,7 +60,6 @@ const LoginView = () => {
       <Box>
         <TextField
           label="Username"
-          variant="outlined"
           sx={{ mb: 2 }}
           fullWidth
           value={username}
@@ -31,7 +67,6 @@ const LoginView = () => {
         />
         <TextField
           label="Password"
-          variant="outlined"
           type="password"
           fullWidth
           value={password}
@@ -39,37 +74,29 @@ const LoginView = () => {
         />
       </Box>
       <Box sx={{ mt: 2 }}>
-        <Button
-          variant="contained"
-          fullWidth
-          onClick={async () => {
-            try {
-              const data = await login(username, password)
-              setAuthToken(data.token)
-              navigate('/')
-            } catch (error) {
-              console.error('Login failed:', error)
-            }
-          }}
-        >
+        <Button type="submit" variant="contained" fullWidth disabled={busy}>
           Login
         </Button>
         <Button
           variant="text"
           fullWidth
+          disabled={busy}
           sx={{ mt: 1, '&:hover': { backgroundColor: 'transparent' } }}
-          onClick={async () => {
-            try {
-              const data = await register(username, password)
-              console.log('Registration successful:', data)
-            } catch (error) {
-              console.error('Registration failed:', error)
-            }
-          }}
+          onClick={submitRegister}
         >
           Register
         </Button>
       </Box>
+      <Snackbar
+        open={error !== null}
+        autoHideDuration={4000}
+        onClose={() => setError(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert severity="error" onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      </Snackbar>
     </Box>
   )
 }

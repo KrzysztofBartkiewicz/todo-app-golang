@@ -1,19 +1,18 @@
 import { Box, Button, Dialog, Typography } from '@mui/material'
-import type { Task } from '../../interfaces/app'
+import type { Task } from '../../schemas'
 import { deleteTaskAtom } from '../../state/state'
 import { useSetAtom } from 'jotai'
 
 interface ConfirmDeleteProps {
   open: boolean
   onClose: () => void
-  taskId?: Task['id']
-  taskTitle?: Task['title']
+  task: Task | null
 }
 
-const ConfirmDelete = ({ open, onClose, taskId, taskTitle }: ConfirmDeleteProps) => {
+const ConfirmDelete = ({ open, onClose, task }: ConfirmDeleteProps) => {
   const deleteTask = useSetAtom(deleteTaskAtom)
 
-  if (taskId == null) return null
+  if (!task) return null
 
   return (
     <Dialog
@@ -23,7 +22,7 @@ const ConfirmDelete = ({ open, onClose, taskId, taskTitle }: ConfirmDeleteProps)
     >
       <Typography component="h2">Are you sure you want to delete task?</Typography>
       <Typography variant="subtitle1">
-        <b>{`${taskTitle}`}</b>
+        <b>{task.title}</b>
       </Typography>
       <Box
         sx={{
@@ -37,13 +36,12 @@ const ConfirmDelete = ({ open, onClose, taskId, taskTitle }: ConfirmDeleteProps)
           variant="contained"
           fullWidth
           onClick={() => {
-            deleteTask(taskId)
+            deleteTask(task.id)
             onClose()
           }}
         >
           <Typography>Yes</Typography>
         </Button>
-
         <Button variant="outlined" fullWidth onClick={onClose}>
           <Typography>No</Typography>
         </Button>

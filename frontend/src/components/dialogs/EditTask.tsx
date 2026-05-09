@@ -1,5 +1,5 @@
 import { Box, Button, Dialog, TextField, Typography } from '@mui/material'
-import type { Task } from '../../interfaces/app'
+import type { Task } from '../../schemas'
 import { updateTaskAtom } from '../../state/state'
 import { useSetAtom } from 'jotai'
 import { useState } from 'react'
@@ -7,15 +7,14 @@ import { useState } from 'react'
 interface EditTaskProps {
   open: boolean
   onClose: () => void
-  taskId?: Task['id']
-  taskTitle?: Task['title']
+  task: Task | null
 }
 
-const EditTask = ({ open, onClose, taskId, taskTitle }: EditTaskProps) => {
+const EditTask = ({ open, onClose, task }: EditTaskProps) => {
   const updateTask = useSetAtom(updateTaskAtom)
-  const [title, setTitle] = useState(taskTitle || '')
+  const [title, setTitle] = useState(task?.title ?? '')
 
-  if (taskId == null) return null
+  if (!task) return null
 
   return (
     <Dialog
@@ -25,12 +24,11 @@ const EditTask = ({ open, onClose, taskId, taskTitle }: EditTaskProps) => {
     >
       <Typography component="h2">You are going to edit task:</Typography>
       <Typography variant="subtitle1" sx={{ mb: '20px' }}>
-        <b>{`${taskTitle}`}</b>
+        <b>{task.title}</b>
       </Typography>
       <TextField
         fullWidth
         label="Task Title"
-        variant="outlined"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
       />
@@ -45,14 +43,14 @@ const EditTask = ({ open, onClose, taskId, taskTitle }: EditTaskProps) => {
         <Button
           variant="contained"
           fullWidth
+          disabled={!title.trim()}
           onClick={() => {
-            updateTask({ id: taskId, title, status: 'todo' })
+            updateTask({ id: task.id, title: title.trim(), status: task.status })
             onClose()
           }}
         >
           <Typography>Update</Typography>
         </Button>
-
         <Button variant="outlined" fullWidth onClick={onClose}>
           <Typography>Cancel</Typography>
         </Button>

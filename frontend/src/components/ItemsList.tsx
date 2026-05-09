@@ -6,86 +6,80 @@ import { tasksAtom, updateTaskAtom } from '../state/state'
 import ConfirmDelete from './dialogs/ConfirmDelete'
 import { useState } from 'react'
 import EditTask from './dialogs/EditTask'
-import type { Task } from '../interfaces/app'
+import type { Task, TaskStatus } from '../schemas'
 
 const ItemsList = () => {
   const tasks = useAtomValue(tasksAtom)
   const updateTask = useSetAtom(updateTaskAtom)
-  const [taskIDToDelete, setTaskIDToDelete] = useState<{
-    id: number
-    title: string
-  } | null>(null)
-  const [taskIDToEdit, setTaskIDToEdit] = useState<{
-    id: number
-    title: string
-  } | null>(null)
+  const [taskToDelete, setTaskToDelete] = useState<Task | null>(null)
+  const [taskToEdit, setTaskToEdit] = useState<Task | null>(null)
   const [updatingTaskIds, setUpdatingTaskIds] = useState<number[]>([])
 
   return (
     <>
       <ConfirmDelete
-        open={taskIDToDelete !== null}
-        onClose={() => setTaskIDToDelete(null)}
-        taskId={taskIDToDelete?.id}
-        taskTitle={taskIDToDelete?.title}
+        open={taskToDelete !== null}
+        onClose={() => setTaskToDelete(null)}
+        task={taskToDelete}
       />
       <EditTask
-        open={taskIDToEdit !== null}
-        onClose={() => setTaskIDToEdit(null)}
-        taskId={taskIDToEdit?.id}
-        taskTitle={taskIDToEdit?.title}
+        key={taskToEdit?.id}
+        open={taskToEdit !== null}
+        onClose={() => setTaskToEdit(null)}
+        task={taskToEdit}
       />
-      {tasks.map(({ id, title, status }) => (
-        <Box
-          component={Paper}
-          key={id}
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            mb: '20px',
-            p: '10px 20px',
-            opacity: updatingTaskIds.includes(id) ? 0.6 : 1,
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-            <Checkbox
-              checked={status === 'done'}
-              disabled={updatingTaskIds.includes(id)}
-              onChange={async (e) => {
-                const isChecked = e.target.checked
-                const nextStatus: Task['status'] = isChecked ? 'done' : 'todo'
-
-                setUpdatingTaskIds((ids) => [...ids, id])
-
-                try {
-                  await updateTask({ id, title, status: nextStatus })
-                } catch {
-                  alert('Failed to update task')
-                } finally {
-                  setUpdatingTaskIds((ids) => ids.filter((taskId) => taskId !== id))
-                }
-              }}
-            />
-            <Typography
-              sx={{
-                textDecoration: status === 'done' ? 'line-through' : 'none',
-                opacity: status === 'done' ? 0.6 : 1,
-              }}
-            >
-              {title}
-            </Typography>
+      {tasks.map((task) => {
+        const { id, title, status } = task
+        const isUpdating = updatingTaskIds.includes(id)
+        return (
+          <Box
+            component={Paper}
+            key={id}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              mb: '20px',
+              p: '10px 20px',
+              opacity: isUpdating ? 0.6 : 1,
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+              <Checkbox
+                checked={status === 'done'}
+                disabled={isUpdating}
+                onChange={async (e) => {
+                  const nextStatus: TaskStatus = e.target.checked ? 'done' : 'todo'
+                  setUpdatingTaskIds((ids) => [...ids, id])
+                  try {
+                    await updateTask({ id, title, status: nextStatus })
+                  } catch {
+                    alert('Failed to update task')
+                  } finally {
+                    setUpdatingTaskIds((ids) => ids.filter((tid) => tid !== id))
+                  }
+                }}
+              />
+              <Typography
+                sx={{
+                  textDecoration: status === 'done' ? 'line-through' : 'none',
+                  opacity: status === 'done' ? 0.6 : 1,
+                }}
+              >
+                {title}
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', gap: '10px' }}>
+              <IconButton aria-label="Edit task" onClick={() => setTaskToEdit(task)}>
+                <CreateTwoToneIcon />
+              </IconButton>
+              <IconButton aria-label="Delete task" onClick={() => setTaskToDelete(task)}>
+                <DeleteOutlineTwoToneIcon />
+              </IconButton>
+            </Box>
           </Box>
-          <Box sx={{ display: 'flex', gap: '10px' }}>
-            <IconButton onClick={() => setTaskIDToEdit({ id, title })}>
-              <CreateTwoToneIcon />
-            </IconButton>
-            <IconButton onClick={() => setTaskIDToDelete({ id, title })}>
-              <DeleteOutlineTwoToneIcon />
-            </IconButton>
-          </Box>
-        </Box>
-      ))}
+        )
+      })}
     </>
   )
 }

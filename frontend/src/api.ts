@@ -1,10 +1,25 @@
-import type { Task } from './interfaces/app'
+import { getDefaultStore } from 'jotai'
+import {
+  authResponseSchema,
+  taskSchema,
+  tasksSchema,
+  type AuthResponse,
+  type Task,
+  type TaskStatus,
+} from './schemas'
+import { tokenAtom } from './state/auth'
 
-const API_URL = 'http://localhost:8080'
+const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8080'
 const contentType = 'application/json'
 
+let onUnauthorized: (() => void) | null = null
+
+export const setOnUnauthorized = (handler: () => void) => {
+  onUnauthorized = handler
+}
+
 const authHeaders = (extra?: Record<string, string>) => {
-  const token = localStorage.getItem('token')
+  const token = getDefaultStore().get(tokenAtom)
   return {
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...extra,
@@ -14,77 +29,70 @@ const authHeaders = (extra?: Record<string, string>) => {
 const authFetch = async (input: RequestInfo, init?: RequestInit) => {
   const res = await fetch(input, init)
   if (res.status === 401) {
-    window.dispatchEvent(new Event('auth:expired'))
+    onUnauthorized?.()
     throw new Error('Unauthorized')
+  }
+  if (!res.ok) {
+    throw new Error(`Request failed: ${res.status}`)
   }
   return res
 }
 
-export const getTasksList = async () => {
+export const getTasksList = async (): Promise<Task[]> => {
   const response = await authFetch(`${API_URL}/tasks`, {
     method: 'GET',
     headers: authHeaders(),
   })
-  return response.json()
+  return tasksSchema.parse(await response.json())
 }
 
-export const createTask = async (title: string) => {
+export const createTask = async (title: string): Promise<Task> => {
   const response = await authFetch(`${API_URL}/tasks`, {
     method: 'POST',
     headers: authHeaders({ 'Content-Type': contentType }),
     body: JSON.stringify({ title }),
   })
-  return response.json()
+  return taskSchema.parse(await response.json())
 }
 
-export const deleteTask = async (id: number) => {
+export const deleteTask = async (id: number): Promise<void> => {
   await authFetch(`${API_URL}/tasks/${id}`, {
     method: 'DELETE',
     headers: authHeaders(),
   })
 }
 
-export const updateTask = async (id: number, title: string, status: Task['status']) => {
+export const updateTask = async (
+  id: number,
+  title: string,
+  status: TaskStatus
+): Promise<Task> => {
   const response = await authFetch(`${API_URL}/tasks/${id}`, {
     method: 'PATCH',
     headers: authHeaders({ 'Content-Type': contentType }),
     body: JSON.stringify({ title, status }),
   })
-  return response.json()
+  return taskSchema.parse(await response.json())
 }
 
-export const login = async (username: string, password: string) => {
+export const login = async (
+  username: string,
+  password: string
+): Promise<AuthResponse> => {
   const res = await fetch(`${API_URL}/login`, {
     method: 'POST',
-    headers: {
-      'Content-Type': contentType,
-    },
+    headers: { 'Content-Type': contentType },
     body: JSON.stringify({ username, password }),
   })
-
-  if (!res.ok) {
-    throw new Error('Invalid credentials')
-  }
-
-  const data = await res.json()
-
-  return data
+  if (!res.ok) throw new Error('Invalid credentials')
+  return authResponseSchema.parse(await res.json())
 }
 
-export const register = async (username: string, password: string) => {
+export const register = async (username: string, password: string): Promise<void> => {
   const res = await fetch(`${API_URL}/register`, {
     method: 'POST',
-    headers: {
-      'Content-Type': contentType,
-    },
+    headers: { 'Content-Type': contentType },
     body: JSON.stringify({ username, password }),
   })
-
-  if (!res.ok) {
-    throw new Error('Registration failed')
-  }
-
-  const data = await res.json()
-
-  return data
+  if (!res.ok) throw new Error('Registration failed')
 }

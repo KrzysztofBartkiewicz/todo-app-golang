@@ -2,14 +2,15 @@ import { Box, Button, IconButton, SvgIcon, Typography } from '@mui/material'
 import DarkModeOutlinedIcon from '@mui/icons-material/DarkModeOutlined'
 import LightModeOutlinedIcon from '@mui/icons-material/LightModeOutlined'
 import { appModeAtom } from '../state/state'
-import { useAtom, useAtomValue } from 'jotai'
-import { useAuth } from '../auth/AuthProvider'
-import { userNameAtom } from '../state/user'
+import { logoutAtom, userNameAtom } from '../state/auth'
+import { useAtom, useAtomValue, useSetAtom } from 'jotai'
 
 const AppModeButton = () => {
   const [appMode, setAppMode] = useAtom(appModeAtom)
-  const { logout } = useAuth()
   const userName = useAtomValue(userNameAtom)
+  const logout = useSetAtom(logoutAtom)
+
+  const isDark = appMode === 'dark'
 
   return (
     <Box
@@ -24,9 +25,12 @@ const AppModeButton = () => {
         {userName}
       </Typography>
       <Box>
-        <IconButton onClick={() => setAppMode((prev) => (prev === 'light' ? 'dark' : 'light'))}>
+        <IconButton
+          aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+          onClick={() => setAppMode((prev) => (prev === 'light' ? 'dark' : 'light'))}
+        >
           <SvgIcon fontSize="large">
-            {appMode === 'light' ? <DarkModeOutlinedIcon /> : <LightModeOutlinedIcon />}
+            {isDark ? <LightModeOutlinedIcon /> : <DarkModeOutlinedIcon />}
           </SvgIcon>
         </IconButton>
         <Button onClick={logout}>Logout</Button>

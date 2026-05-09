@@ -1,8 +1,9 @@
 import { Navigate, Outlet } from 'react-router'
-import { useAuth } from './AuthProvider'
+import { useAtomValue } from 'jotai'
+import { tokenAtom } from '../state/auth'
 
 const RequireAuth = () => {
-  const { token } = useAuth()
+  const token = useAtomValue(tokenAtom)
 
   if (!token) {
     return <Navigate to="/login" replace />
