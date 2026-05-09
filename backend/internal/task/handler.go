@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"todo-app/backend/internal/response"
 )
 
 type Handler struct {
@@ -23,7 +24,7 @@ func (h *Handler) HandleTasks(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPost:
 		h.createTask(w, r)
 	default:
-		writeJSONError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		response.WriteJSONError(w, http.StatusMethodNotAllowed, "Method not allowed")
 	}
 }
 
@@ -34,18 +35,18 @@ func (h *Handler) HandleTaskByID(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPatch:
 		h.updateTask(w, r)
 	default:
-		writeJSONError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		response.WriteJSONError(w, http.StatusMethodNotAllowed, "Method not allowed")
 	}
 }
 
 func (h *Handler) getTasks(w http.ResponseWriter) {
 	tasks, err := h.repo.GetAll()
 	if err != nil {
-		writeJSONError(w, http.StatusInternalServerError, "Failed to fetch tasks")
+		response.WriteJSONError(w, http.StatusInternalServerError, "Failed to fetch tasks")
 		return
 	}
 
-	writeJSON(w, http.StatusOK, tasks)
+	response.WriteJSON(w, http.StatusOK, tasks)
 }
 
 func (h *Handler) createTask(w http.ResponseWriter, r *http.Request) {
@@ -57,55 +58,55 @@ func (h *Handler) createTask(w http.ResponseWriter, r *http.Request) {
 	err := decoder.Decode(&newTask)
 
 	if err != nil {
-		writeJSONError(w, http.StatusBadRequest, "Invalid request body")
+		response.WriteJSONError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
 	newTask.Title = strings.TrimSpace(newTask.Title)
 
 	if newTask.Title == "" {
-		writeJSONError(w, http.StatusBadRequest, "Missing title")
+		response.WriteJSONError(w, http.StatusBadRequest, "Missing title")
 		return
 	}
 
 	if !isValidStatus(newTask.Status) && newTask.Status != "" {
-		writeJSONError(w, http.StatusBadRequest, "Invalid status")
+		response.WriteJSONError(w, http.StatusBadRequest, "Invalid status")
 		return
 	}
 
 	createdTask, err := h.repo.Create(newTask)
 	if err != nil {
-		writeJSONError(w, http.StatusInternalServerError, "Failed to create task")
+		response.WriteJSONError(w, http.StatusInternalServerError, "Failed to create task")
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, createdTask)
+	response.WriteJSON(w, http.StatusCreated, createdTask)
 }
 
 func (h *Handler) deleteTask(w http.ResponseWriter, r *http.Request) {
 	id, err := getTaskID(r)
 	if err != nil {
-		writeJSONError(w, http.StatusBadRequest, "Invalid task id")
+		response.WriteJSONError(w, http.StatusBadRequest, "Invalid task id")
 		return
 	}
 
 	err = h.repo.Delete(id)
 	if err != nil {
 		if errors.Is(err, ErrTaskNotFound) {
-			writeJSONError(w, http.StatusNotFound, "Task not found")
+			response.WriteJSONError(w, http.StatusNotFound, "Task not found")
 			return
 		}
-		writeJSONError(w, http.StatusInternalServerError, "Failed to delete task")
+		response.WriteJSONError(w, http.StatusInternalServerError, "Failed to delete task")
 		return
 	}
 
-	writeNoContent(w)
+	response.WriteNoContent(w)
 }
 
 func (h *Handler) updateTask(w http.ResponseWriter, r *http.Request) {
 	id, err := getTaskID(r)
 	if err != nil {
-		writeJSONError(w, http.StatusBadRequest, "Invalid task id")
+		response.WriteJSONError(w, http.StatusBadRequest, "Invalid task id")
 		return
 	}
 
@@ -117,17 +118,17 @@ func (h *Handler) updateTask(w http.ResponseWriter, r *http.Request) {
 	err = decoder.Decode(&req)
 
 	if err != nil {
-		writeJSONError(w, http.StatusBadRequest, "Invalid JSON body")
+		response.WriteJSONError(w, http.StatusBadRequest, "Invalid JSON body")
 		return
 	}
 
 	if req.Title == nil && req.Status == nil {
-		writeJSONError(w, http.StatusBadRequest, "No fields to update")
+		response.WriteJSONError(w, http.StatusBadRequest, "No fields to update")
 		return
 	}
 
 	if req.Status != nil && !isValidStatus(*req.Status) {
-		writeJSONError(w, http.StatusBadRequest, "Invalid status")
+		response.WriteJSONError(w, http.StatusBadRequest, "Invalid status")
 		return
 	}
 
@@ -135,7 +136,7 @@ func (h *Handler) updateTask(w http.ResponseWriter, r *http.Request) {
 		*req.Title = strings.TrimSpace(*req.Title)
 
 		if *req.Title == "" {
-			writeJSONError(w, http.StatusBadRequest, "Missing title")
+			response.WriteJSONError(w, http.StatusBadRequest, "Missing title")
 			return
 		}
 	}
@@ -143,15 +144,15 @@ func (h *Handler) updateTask(w http.ResponseWriter, r *http.Request) {
 	updatedTask, err := h.repo.Update(id, req)
 	if err != nil {
 		if errors.Is(err, ErrTaskNotFound) {
-			writeJSONError(w, http.StatusNotFound, "Task not found")
+			response.WriteJSONError(w, http.StatusNotFound, "Task not found")
 			return
 		}
 
-		writeJSONError(w, http.StatusInternalServerError, "Failed to update task")
+		response.WriteJSONError(w, http.StatusInternalServerError, "Failed to update task")
 		return
 	}
 
-	writeJSON(w, http.StatusOK, updatedTask)
+	response.WriteJSON(w, http.StatusOK, updatedTask)
 }
 
 func getTaskID(r *http.Request) (int, error) {

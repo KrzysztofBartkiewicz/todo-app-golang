@@ -6,6 +6,7 @@ import (
 	"todo-app/backend/internal/database"
 	"todo-app/backend/internal/server"
 	"todo-app/backend/internal/task"
+	"todo-app/backend/internal/user"
 )
 
 const port string = ":8080"
@@ -18,11 +19,12 @@ func main() {
 
 	defer db.Close()
 
-	repo := task.NewRepository(db)
+	tasksRepo := task.NewRepository(db)
+	userRepo := user.NewRepository(db)
 
 	http.HandleFunc("/health", server.WithCORS(healthHandler))
 
-	server.RegisterRoutes(repo)
+	server.RegisterRoutes(tasksRepo, userRepo)
 
 	println("Server running on http://localhost" + port)
 

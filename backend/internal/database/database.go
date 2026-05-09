@@ -29,5 +29,21 @@ func createTables(db *sql.DB) error {
 		)
 	`)
 
-	return err
+	if err != nil {
+		return err
+	}
+
+	_, err = db.Exec(`
+	CREATE TABLE IF NOT EXISTS users (
+		id INTEGER PRIMARY KEY,
+		username TEXT NOT NULL UNIQUE,
+		password_hash TEXT NOT NULL
+	)
+`)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -1,15 +1,15 @@
-package task
+package response
 
 import (
 	"encoding/json"
 	"net/http"
 )
 
-type errorResponse struct {
+type ErrorResponse struct {
 	Error string `json:"error"`
 }
 
-func writeJSON(w http.ResponseWriter, statusCode int, data any) {
+func WriteJSON(w http.ResponseWriter, statusCode int, data any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
 
@@ -18,12 +18,12 @@ func writeJSON(w http.ResponseWriter, statusCode int, data any) {
 	}
 }
 
-func writeJSONError(w http.ResponseWriter, statusCode int, message string) {
-	writeJSON(w, statusCode, errorResponse{
+func WriteJSONError(w http.ResponseWriter, statusCode int, message string) {
+	WriteJSON(w, statusCode, ErrorResponse{
 		Error: message,
 	})
 }
 
-func writeNoContent(w http.ResponseWriter) {
+func WriteNoContent(w http.ResponseWriter) {
 	w.WriteHeader(http.StatusNoContent)
 }
