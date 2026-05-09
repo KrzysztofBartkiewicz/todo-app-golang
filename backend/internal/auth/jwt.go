@@ -1,12 +1,22 @@
 package auth
 
 import (
+	"log"
+	"os"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 )
 
-var jwtSecret = []byte("dev-secret-change-me")
+var jwtSecret []byte
+
+func LoadSecret() {
+	s := os.Getenv("JWT_SECRET")
+	if s == "" {
+		log.Fatal("JWT_SECRET environment variable not set")
+	}
+	jwtSecret = []byte(s)
+}
 
 func GenerateToken(userID int, username string) (string, error) {
 	claims := jwt.MapClaims{

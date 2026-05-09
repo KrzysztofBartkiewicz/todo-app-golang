@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"net/http"
+	"todo-app/backend/internal/auth"
 	"todo-app/backend/internal/database"
 	"todo-app/backend/internal/server"
 	"todo-app/backend/internal/task"
@@ -12,6 +13,8 @@ import (
 const port string = ":8080"
 
 func main() {
+	auth.LoadSecret()
+
 	db, err := database.Open()
 	if err != nil {
 		panic(err)

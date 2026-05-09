@@ -7,7 +7,7 @@ import (
 )
 
 func Open() (*sql.DB, error) {
-	db, err := sql.Open("sqlite3", "./tasks.db")
+	db, err := sql.Open("sqlite3", "./tasks.db?_foreign_keys=on")
 	if err != nil {
 		return nil, err
 	}
@@ -22,11 +22,10 @@ func Open() (*sql.DB, error) {
 
 func createTables(db *sql.DB) error {
 	_, err := db.Exec(`
-		CREATE TABLE IF NOT EXISTS tasks (
+		CREATE TABLE IF NOT EXISTS users (
 			id INTEGER PRIMARY KEY,
-			title TEXT NOT NULL,
-			status TEXT NOT NULL,
-			user_id INTEGER NOT NULL
+			username TEXT NOT NULL UNIQUE,
+			password_hash TEXT NOT NULL
 		)
 	`)
 
@@ -35,12 +34,13 @@ func createTables(db *sql.DB) error {
 	}
 
 	_, err = db.Exec(`
-	CREATE TABLE IF NOT EXISTS users (
-		id INTEGER PRIMARY KEY,
-		username TEXT NOT NULL UNIQUE,
-		password_hash TEXT NOT NULL
-	)
-`)
+		CREATE TABLE IF NOT EXISTS tasks (
+			id INTEGER PRIMARY KEY,
+			title TEXT NOT NULL,
+			status TEXT NOT NULL,
+			user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE
+		)
+	`)
 
 	if err != nil {
 		return err
