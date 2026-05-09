@@ -2,22 +2,30 @@ package main
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"todo-app/backend/internal/auth"
 	"todo-app/backend/internal/database"
 	"todo-app/backend/internal/server"
 	"todo-app/backend/internal/task"
 	"todo-app/backend/internal/user"
+
+	"github.com/joho/godotenv"
 )
 
-const port string = ":8080"
+const port = ":8080"
 
 func main() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
 	auth.LoadSecret()
 
 	db, err := database.Open()
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	defer db.Close()
@@ -29,11 +37,11 @@ func main() {
 
 	server.RegisterRoutes(tasksRepo, userRepo)
 
-	println("Server running on http://localhost" + port)
+	log.Println("Server running on http://localhost" + port)
 
 	err = http.ListenAndServe(port, nil)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 }
 
