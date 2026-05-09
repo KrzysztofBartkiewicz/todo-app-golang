@@ -1,12 +1,17 @@
 package auth
 
 import (
+	"context"
 	"net/http"
 	"strings"
 	"todo-app/backend/internal/response"
 
 	"github.com/golang-jwt/jwt/v5"
 )
+
+type contextKey string
+
+const UserIDKey contextKey = "userID"
 
 func Middleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -24,13 +29,25 @@ func Middleware(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		_, err := ParseToken(tokenString)
+		claims, err := ParseToken(tokenString)
+
 		if err != nil {
 			response.WriteJSONError(w, http.StatusUnauthorized, "Invalid or expired token")
 			return
 		}
 
-		next(w, r)
+		userIDFloat, ok := claims["user_id"].(float64)
+
+		if !ok {
+			response.WriteJSONError(w, http.StatusUnauthorized, "Invalid token claims")
+			return
+		}
+
+		userID := int(userIDFloat)
+
+		ctx := context.WithValue(r.Context(), UserIDKey, userID)
+
+		next(w, r.WithContext(ctx))
 	}
 }
 

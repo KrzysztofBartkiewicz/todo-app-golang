@@ -8,10 +8,10 @@ import (
 var ErrTaskNotFound = errors.New("task not found")
 
 type TaskRepository interface {
-	Create(task Task) (Task, error)
-	GetAll() ([]Task, error)
-	Delete(id int) error
-	Update(id int, req UpdateTaskRequest) (Task, error)
+	CreateByUserID(task Task, userID int) (Task, error)
+	GetAllByUserID(userID int) ([]Task, error)
+	DeleteByIDAndUserID(taskID, userID int) error
+	UpdateByTaskIDAndUserID(taskID, userID int, req UpdateTaskRequest) (Task, error)
 }
 
 type Repository struct {
@@ -22,8 +22,14 @@ func NewRepository(db *sql.DB) *Repository {
 	return &Repository{db: db}
 }
 
-func (r *Repository) GetAll() ([]Task, error) {
-	rows, err := r.db.Query("SELECT id, title, status FROM tasks")
+func (r *Repository) GetAllByUserID(userID int) ([]Task, error) {
+	rows, err := r.db.Query(
+		`SELECT id, title, status, user_id 
+		FROM tasks
+		WHERE user_id = ?`,
+		userID,
+	)
+
 	if err != nil {
 		return nil, err
 	}
@@ -35,22 +41,27 @@ func (r *Repository) GetAll() ([]Task, error) {
 	for rows.Next() {
 		var t Task
 
-		err := rows.Scan(&t.ID, &t.Title, &t.Status)
+		err := rows.Scan(&t.ID, &t.Title, &t.Status, &t.UserID)
 		if err != nil {
 			return nil, err
 		}
+
 		tasks = append(tasks, t)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	return tasks, nil
 }
 
-func (r *Repository) Create(newTask Task) (Task, error) {
+func (r *Repository) CreateByUserID(newTask Task, userID int) (Task, error) {
 	if newTask.Status == "" {
 		newTask.Status = "todo"
 	}
 
-	result, err := r.db.Exec("INSERT INTO tasks (title, status) VALUES (?, ?)", newTask.Title, newTask.Status)
+	result, err := r.db.Exec("INSERT INTO tasks (title, status, user_id) VALUES (?, ?, ?)", newTask.Title, newTask.Status, userID)
 	if err != nil {
 		return Task{}, err
 	}
@@ -64,8 +75,8 @@ func (r *Repository) Create(newTask Task) (Task, error) {
 	return newTask, nil
 }
 
-func (r *Repository) Delete(id int) error {
-	result, err := r.db.Exec("DELETE FROM tasks WHERE id = ?", id)
+func (r *Repository) DeleteByIDAndUserID(taskID, userID int) error {
+	result, err := r.db.Exec("DELETE FROM tasks WHERE id = ? AND user_id = ?", taskID, userID)
 	if err != nil {
 		return err
 	}
@@ -82,11 +93,19 @@ func (r *Repository) Delete(id int) error {
 	return nil
 }
 
-func (r *Repository) Update(id int, req UpdateTaskRequest) (Task, error) {
+func (r *Repository) UpdateByTaskIDAndUserID(taskID, userID int, req UpdateTaskRequest) (Task, error) {
 	var updatedTask Task
-	err := r.db.QueryRow("SELECT id, title, status FROM tasks WHERE id = ?", id).Scan(&updatedTask.ID, &updatedTask.Title, &updatedTask.Status)
+
+	err := r.db.QueryRow(
+		`SELECT id, title, status, user_id
+		FROM tasks
+		WHERE id = ? AND user_id = ?`,
+		taskID,
+		userID,
+	).Scan(&updatedTask.ID, &updatedTask.Title, &updatedTask.Status, &updatedTask.UserID)
+
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return Task{}, ErrTaskNotFound
 		}
 		return Task{}, err
@@ -100,7 +119,13 @@ func (r *Repository) Update(id int, req UpdateTaskRequest) (Task, error) {
 		updatedTask.Status = *req.Status
 	}
 
-	_, err = r.db.Exec("UPDATE tasks SET title = ?, status = ? WHERE id = ?", updatedTask.Title, updatedTask.Status, updatedTask.ID)
+	_, err = r.db.Exec(`UPDATE tasks SET title = ?, status = ? WHERE id = ? AND user_id = ?`,
+		updatedTask.Title,
+		updatedTask.Status,
+		updatedTask.ID,
+		updatedTask.UserID,
+	)
+
 	if err != nil {
 		return Task{}, err
 	}

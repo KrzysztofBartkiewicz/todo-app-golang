@@ -25,7 +25,8 @@ func createTables(db *sql.DB) error {
 		CREATE TABLE IF NOT EXISTS tasks (
 			id INTEGER PRIMARY KEY,
 			title TEXT NOT NULL,
-			status TEXT NOT NULL
+			status TEXT NOT NULL,
+			user_id INTEGER NOT NULL
 		)
 	`)
 

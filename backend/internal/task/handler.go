@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"todo-app/backend/internal/auth"
 	"todo-app/backend/internal/response"
 )
 
@@ -20,7 +21,7 @@ func NewHandler(repo TaskRepository) *Handler {
 func (h *Handler) HandleTasks(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		h.getTasks(w)
+		h.getTasks(w, r)
 	case http.MethodPost:
 		h.createTask(w, r)
 	default:
@@ -39,8 +40,15 @@ func (h *Handler) HandleTaskByID(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *Handler) getTasks(w http.ResponseWriter) {
-	tasks, err := h.repo.GetAll()
+func (h *Handler) getTasks(w http.ResponseWriter, r *http.Request) {
+	userID, err := auth.GetUserID(r)
+
+	if err != nil {
+		response.WriteJSONError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	tasks, err := h.repo.GetAllByUserID(userID)
 	if err != nil {
 		response.WriteJSONError(w, http.StatusInternalServerError, "Failed to fetch tasks")
 		return
@@ -50,31 +58,43 @@ func (h *Handler) getTasks(w http.ResponseWriter) {
 }
 
 func (h *Handler) createTask(w http.ResponseWriter, r *http.Request) {
-	var newTask Task
+	var req CreateTaskRequest
 
 	decoder := json.NewDecoder(r.Body)
 	decoder.DisallowUnknownFields()
 
-	err := decoder.Decode(&newTask)
+	err := decoder.Decode(&req)
 
 	if err != nil {
 		response.WriteJSONError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
-	newTask.Title = strings.TrimSpace(newTask.Title)
+	req.Title = strings.TrimSpace(req.Title)
 
-	if newTask.Title == "" {
+	if req.Title == "" {
 		response.WriteJSONError(w, http.StatusBadRequest, "Missing title")
 		return
 	}
 
-	if !isValidStatus(newTask.Status) && newTask.Status != "" {
+	if !isValidStatus(req.Status) && req.Status != "" {
 		response.WriteJSONError(w, http.StatusBadRequest, "Invalid status")
 		return
 	}
 
-	createdTask, err := h.repo.Create(newTask)
+	userID, err := auth.GetUserID(r)
+	if err != nil {
+		response.WriteJSONError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	newTask := Task{
+		Title:  req.Title,
+		Status: req.Status,
+		UserID: userID,
+	}
+
+	createdTask, err := h.repo.CreateByUserID(newTask, userID)
 	if err != nil {
 		response.WriteJSONError(w, http.StatusInternalServerError, "Failed to create task")
 		return
@@ -90,7 +110,13 @@ func (h *Handler) deleteTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.repo.Delete(id)
+	userID, err := auth.GetUserID(r)
+	if err != nil {
+		response.WriteJSONError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	err = h.repo.DeleteByIDAndUserID(id, userID)
 	if err != nil {
 		if errors.Is(err, ErrTaskNotFound) {
 			response.WriteJSONError(w, http.StatusNotFound, "Task not found")
@@ -141,7 +167,13 @@ func (h *Handler) updateTask(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	updatedTask, err := h.repo.Update(id, req)
+	userID, err := auth.GetUserID(r)
+	if err != nil {
+		response.WriteJSONError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	updatedTask, err := h.repo.UpdateByTaskIDAndUserID(id, userID, req)
 	if err != nil {
 		if errors.Is(err, ErrTaskNotFound) {
 			response.WriteJSONError(w, http.StatusNotFound, "Task not found")
