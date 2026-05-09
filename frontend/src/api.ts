@@ -11,8 +11,17 @@ const authHeaders = (extra?: Record<string, string>) => {
   }
 }
 
+const authFetch = async (input: RequestInfo, init?: RequestInit) => {
+  const res = await fetch(input, init)
+  if (res.status === 401) {
+    window.dispatchEvent(new Event('auth:expired'))
+    throw new Error('Unauthorized')
+  }
+  return res
+}
+
 export const getTasksList = async () => {
-  const response = await fetch(`${API_URL}/tasks`, {
+  const response = await authFetch(`${API_URL}/tasks`, {
     method: 'GET',
     headers: authHeaders(),
   })
@@ -20,7 +29,7 @@ export const getTasksList = async () => {
 }
 
 export const createTask = async (title: string) => {
-  const response = await fetch(`${API_URL}/tasks`, {
+  const response = await authFetch(`${API_URL}/tasks`, {
     method: 'POST',
     headers: authHeaders({ 'Content-Type': contentType }),
     body: JSON.stringify({ title }),
@@ -29,14 +38,14 @@ export const createTask = async (title: string) => {
 }
 
 export const deleteTask = async (id: number) => {
-  await fetch(`${API_URL}/tasks/${id}`, {
+  await authFetch(`${API_URL}/tasks/${id}`, {
     method: 'DELETE',
     headers: authHeaders(),
   })
 }
 
 export const updateTask = async (id: number, title: string, status: Task['status']) => {
-  const response = await fetch(`${API_URL}/tasks/${id}`, {
+  const response = await authFetch(`${API_URL}/tasks/${id}`, {
     method: 'PATCH',
     headers: authHeaders({ 'Content-Type': contentType }),
     body: JSON.stringify({ title, status }),

@@ -1,11 +1,13 @@
-import { Box, IconButton, SvgIcon } from '@mui/material'
+import { Box, Button, IconButton, SvgIcon } from '@mui/material'
 import DarkModeOutlinedIcon from '@mui/icons-material/DarkModeOutlined'
 import LightModeOutlinedIcon from '@mui/icons-material/LightModeOutlined'
 import { appModeAtom } from '../state/state'
 import { useAtom } from 'jotai'
+import { useAuth } from '../auth/AuthProvider'
 
 const AppModeButton = () => {
   const [appMode, setAppMode] = useAtom(appModeAtom)
+  const { logout } = useAuth()
 
   return (
     <Box
@@ -20,6 +22,7 @@ const AppModeButton = () => {
           {appMode === 'light' ? <DarkModeOutlinedIcon /> : <LightModeOutlinedIcon />}
         </SvgIcon>
       </IconButton>
+      <Button onClick={logout}>Logout</Button>
     </Box>
   )
 }
