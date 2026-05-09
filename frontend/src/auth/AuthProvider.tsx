@@ -1,4 +1,7 @@
+import { useSetAtom } from 'jotai'
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { userNameAtom } from '../state/user'
+import { RESET } from 'jotai/utils'
 
 interface AuthContextValue {
   token: string | null
@@ -19,6 +22,7 @@ const getTokenExpMs = (token: string): number | null => {
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [token, setToken] = useState(() => localStorage.getItem('token'))
+  const setUserName = useSetAtom(userNameAtom)
 
   const login = (token: string) => {
     localStorage.setItem('token', token)
@@ -28,6 +32,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = () => {
     localStorage.removeItem('token')
     setToken(null)
+    setUserName(RESET)
   }
 
   useEffect(() => {
