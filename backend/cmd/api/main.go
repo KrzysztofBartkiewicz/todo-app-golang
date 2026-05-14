@@ -33,7 +33,7 @@ func main() {
 	tasksRepo := task.NewRepository(db)
 	userRepo := user.NewRepository(db)
 
-	http.HandleFunc("/health", server.WithCORS(healthHandler))
+	http.HandleFunc("/health", server.WithLogger(server.WithCORS(healthHandler)))
 
 	server.RegisterRoutes(tasksRepo, userRepo)
 
