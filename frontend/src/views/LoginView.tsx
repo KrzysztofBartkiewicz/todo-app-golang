@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { login, register } from '../api'
 import { useNavigate } from 'react-router'
 import { useSetAtom } from 'jotai'
-import { tokenAtom } from '../state/auth'
+import { currentUserAtom, tokenAtom } from '../state/auth'
 
 const LoginView = () => {
   const [username, setUsername] = useState('')
@@ -12,13 +12,15 @@ const LoginView = () => {
   const [busy, setBusy] = useState(false)
   const navigate = useNavigate()
   const setToken = useSetAtom(tokenAtom)
+  const setCurrentUser = useSetAtom(currentUserAtom)
 
   const submitLogin = async () => {
     setBusy(true)
     setError(null)
     try {
-      const { token } = await login(username, password)
+      const { token, user } = await login(username, password)
       setToken(token)
+      setCurrentUser(user)
       navigate('/')
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Login failed')
@@ -32,8 +34,9 @@ const LoginView = () => {
     setError(null)
     try {
       await register(username, password)
-      const { token } = await login(username, password)
+      const { token, user } = await login(username, password)
       setToken(token)
+      setCurrentUser(user)
       navigate('/')
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Registration failed')

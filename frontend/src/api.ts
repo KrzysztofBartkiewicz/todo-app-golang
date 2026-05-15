@@ -3,9 +3,11 @@ import {
   authResponseSchema,
   taskSchema,
   tasksSchema,
+  userSchema,
   type AuthResponse,
   type Task,
   type TaskStatus,
+  type User,
 } from './schemas'
 import { tokenAtom } from './state/auth'
 
@@ -73,6 +75,14 @@ export const updateTask = async (
     body: JSON.stringify({ title, status }),
   })
   return taskSchema.parse(await response.json())
+}
+
+export const getMe = async (): Promise<User> => {
+  const response = await authFetch(`${API_URL}/me`, {
+    method: 'GET',
+    headers: authHeaders(),
+  })
+  return userSchema.parse(await response.json())
 }
 
 export const login = async (

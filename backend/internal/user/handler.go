@@ -85,3 +85,19 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		User:  foundUser,
 	})
 }
+
+func (h *Handler) GetMe(w http.ResponseWriter, r *http.Request) {
+	userID, err := auth.GetUserID(r)
+	if err != nil {
+		response.WriteJSONError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	user, err := h.repo.GetMeByID(userID)
+	if err != nil {
+		response.WriteJSONError(w, http.StatusInternalServerError, "Failed to retrieve user")
+		return
+	}
+
+	response.WriteJSON(w, http.StatusOK, user)
+}

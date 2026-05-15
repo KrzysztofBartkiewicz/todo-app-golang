@@ -7,13 +7,22 @@ import AddTaskInput from '../components/AddTaskInput'
 import EmptyState from '../components/EmptyState'
 import AppModeButton from '../components/AppModeButton'
 import Header from '../components/Header'
+import { currentUserAtom, fetchCurrentUserAtom } from '../state/auth'
 
 const MainView = () => {
   const tasks = useAtomValue(tasksAtom)
   const fetchTasks = useSetAtom(fetchTasksAtom)
+  const fetchCurrentUser = useSetAtom(fetchCurrentUserAtom)
+  const currentUser = useAtomValue(currentUserAtom)
   const [loading, setLoading] = useState(true)
 
   const isEmpty = tasks.length === 0
+
+  useEffect(() => {
+    if (!currentUser) {
+      fetchCurrentUser().catch(() => {})
+    }
+  }, [currentUser, fetchCurrentUser])
 
   useEffect(() => {
     let cancelled = false
