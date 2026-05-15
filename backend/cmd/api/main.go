@@ -40,7 +40,7 @@ func main() {
 	http.Handle(
 		"/health",
 		http.TimeoutHandler(
-			server.WithLogger(server.WithCORS(healthHandler)),
+			server.WithRequestID(server.WithLogger(server.WithCORS(healthHandler))),
 			5*time.Second,
 			"Health check timed out",
 		),
