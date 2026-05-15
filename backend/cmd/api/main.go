@@ -1,9 +1,13 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"time"
 	"todo-app/backend/internal/auth"
 	"todo-app/backend/internal/database"
 	"todo-app/backend/internal/server"
@@ -33,16 +37,44 @@ func main() {
 	tasksRepo := task.NewRepository(db)
 	userRepo := user.NewRepository(db)
 
-	http.HandleFunc("/health", server.WithLogger(server.WithCORS(healthHandler)))
+	http.Handle(
+		"/health",
+		http.TimeoutHandler(
+			server.WithLogger(server.WithCORS(healthHandler)),
+			5*time.Second,
+			"Health check timed out",
+		),
+	)
 
 	server.RegisterRoutes(tasksRepo, userRepo)
 
+	srv := &http.Server{
+		Addr:    port,
+		Handler: nil,
+	}
+
 	log.Println("Server running on http://localhost" + port)
 
-	err = http.ListenAndServe(port, nil)
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatal("Server failed to start: ", err)
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt)
+	<-quit
+
+	log.Println("Shutting down server...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	err = srv.Shutdown(ctx)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Server forced to shutdown: ", err)
 	}
+
+	log.Println("Server stopped gracefully")
 }
 
 func healthHandler(w http.ResponseWriter, r *http.Request) {
