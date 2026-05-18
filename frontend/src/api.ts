@@ -1,6 +1,7 @@
 import { getDefaultStore } from 'jotai'
 import {
   authResponseSchema,
+  refreshResponseSchema,
   taskSchema,
   tasksSchema,
   userSchema,
@@ -28,11 +29,50 @@ const authHeaders = (extra?: Record<string, string>) => {
   }
 }
 
+const withAuthHeader = (init: RequestInit | undefined, token: string): RequestInit => ({
+  ...init,
+  headers: {
+    ...(init?.headers as Record<string, string> | undefined),
+    Authorization: `Bearer ${token}`,
+  },
+})
+
+let refreshPromise: Promise<string | null> | null = null
+
+const refreshAccessToken = async (): Promise<string | null> => {
+  if (!refreshPromise) {
+    refreshPromise = (async () => {
+      try {
+        const res = await fetch(`${API_URL}/refresh`, {
+          method: 'POST',
+          credentials: 'include',
+        })
+        if (!res.ok) return null
+        const { token } = refreshResponseSchema.parse(await res.json())
+        getDefaultStore().set(tokenAtom, token)
+        return token
+      } catch {
+        return null
+      } finally {
+        refreshPromise = null
+      }
+    })()
+  }
+
+  return refreshPromise
+}
+
 const authFetch = async (input: RequestInfo, init?: RequestInit) => {
-  const res = await fetch(input, init)
+  let res = await fetch(input, init)
   if (res.status === 401) {
-    onUnauthorized?.()
-    throw new Error('Unauthorized')
+    const newToken = await refreshAccessToken()
+    if (newToken) {
+      res = await fetch(input, withAuthHeader(init, newToken))
+    }
+    if (res.status === 401) {
+      onUnauthorized?.()
+      throw new Error('Unauthorized')
+    }
   }
   if (!res.ok) {
     throw new Error(`Request failed: ${res.status}`)
@@ -92,6 +132,7 @@ export const login = async (
   const res = await fetch(`${API_URL}/login`, {
     method: 'POST',
     headers: { 'Content-Type': contentType },
+    credentials: 'include',
     body: JSON.stringify({ username, password }),
   })
   if (!res.ok) throw new Error('Invalid credentials')
@@ -105,4 +146,11 @@ export const register = async (username: string, password: string): Promise<void
     body: JSON.stringify({ username, password }),
   })
   if (!res.ok) throw new Error('Registration failed')
+}
+
+export const apiLogout = async (): Promise<void> => {
+  await fetch(`${API_URL}/logout`, {
+    method: 'POST',
+    credentials: 'include',
+  })
 }
