@@ -10,6 +10,7 @@ type UserRepository interface {
 	FindByUsername(username string) (User, error)
 	GetMeByID(id int) (User, error)
 	CreateSession(userID int, refreshTokenHash string, expiresAt time.Time) error
+	FindSessionByRefreshTokenHash(refreshTokenHash string) (Session, error)
 }
 
 type Repository struct {
@@ -63,4 +64,20 @@ func (r *Repository) GetMeByID(id int) (User, error) {
 func (r *Repository) CreateSession(userID int, refreshTokenHash string, expiresAt time.Time) error {
 	_, err := r.db.Exec("INSERT INTO sessions (user_id, refresh_token_hash, expires_at) VALUES (?, ?, ?)", userID, refreshTokenHash, expiresAt)
 	return err
+}
+
+func (r *Repository) FindSessionByRefreshTokenHash(refreshTokenHash string) (Session, error) {
+	row := r.db.QueryRow(`
+		SELECT id, user_id, refresh_token_hash, expires_at, revoked_at, created_at
+		FROM sessions
+		WHERE refresh_token_hash = ?
+	`, refreshTokenHash)
+
+	var session Session
+	err := row.Scan(&session.ID, &session.UserID, &session.RefreshTokenHash, &session.ExpiresAt, &session.RevokedAt, &session.CreatedAt)
+	if err != nil {
+		return Session{}, err
+	}
+
+	return session, nil
 }

@@ -1,5 +1,7 @@
 package user
 
+import "time"
+
 type User struct {
 	ID           int    `json:"id"`
 	Username     string `json:"username"`
@@ -20,4 +22,21 @@ type LoginResponse struct {
 	Token        string `json:"token"`
 	User         User   `json:"user"`
 	RefreshToken string `json:"refresh_token"`
+}
+
+type RefreshRequest struct {
+	RefreshToken string `json:"refresh_token"`
+}
+
+type RefreshResponse struct {
+	Token string `json:"token"`
+}
+
+type Session struct {
+	ID               int
+	UserID           int
+	RefreshTokenHash string
+	ExpiresAt        time.Time
+	RevokedAt        *time.Time
+	CreatedAt        time.Time
 }

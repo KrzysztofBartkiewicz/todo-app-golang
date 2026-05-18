@@ -17,4 +17,5 @@ func RegisterRoutes(tasksRepo *task.Repository, userRepo *user.Repository) {
 	http.Handle("/register", WithTimeout(WithRequestID(WithLogger(WithCORS(userHandler.Register)))))
 	http.Handle("/login", WithTimeout(WithRequestID(WithLogger(WithCORS(userHandler.Login)))))
 	http.Handle("/me", WithTimeout(WithRequestID(WithLogger(WithCORS(auth.Middleware(userHandler.GetMe))))))
+	http.Handle("/refresh", WithTimeout(WithRequestID(WithLogger(WithCORS(userHandler.Refresh)))))
 }

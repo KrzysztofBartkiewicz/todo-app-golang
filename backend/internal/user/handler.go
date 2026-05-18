@@ -117,3 +117,53 @@ func (h *Handler) GetMe(w http.ResponseWriter, r *http.Request) {
 
 	response.WriteJSON(w, http.StatusOK, user)
 }
+
+func (h *Handler) Refresh(w http.ResponseWriter, r *http.Request) {
+	var req RefreshRequest
+
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		response.WriteJSONError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	req.RefreshToken = strings.TrimSpace(req.RefreshToken)
+	if req.RefreshToken == "" {
+		response.WriteJSONError(w, http.StatusBadRequest, "Missing refresh token")
+		return
+	}
+
+	hashedRefreshToken := auth.HashToken(req.RefreshToken)
+
+	session, err := h.repo.FindSessionByRefreshTokenHash(hashedRefreshToken)
+	if err != nil {
+		response.WriteJSONError(w, http.StatusUnauthorized, "Invalid refresh token")
+		return
+	}
+
+	if session.RevokedAt != nil {
+		response.WriteJSONError(w, http.StatusUnauthorized, "Refresh token revoked")
+		return
+	}
+
+	if time.Now().After(session.ExpiresAt) {
+		response.WriteJSONError(w, http.StatusUnauthorized, "Refresh token expired")
+		return
+	}
+
+	user, err := h.repo.GetMeByID(session.UserID)
+	if err != nil {
+		response.WriteJSONError(w, http.StatusInternalServerError, "Failed to retrieve user")
+		return
+	}
+
+	token, err := auth.GenerateToken(user.ID, user.Username)
+	if err != nil {
+		response.WriteJSONError(w, http.StatusInternalServerError, "Failed to generate token")
+		return
+	}
+
+	response.WriteJSON(w, http.StatusOK, RefreshResponse{
+		Token: token,
+	})
+}

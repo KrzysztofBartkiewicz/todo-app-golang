@@ -52,8 +52,8 @@ func createTables(db *sql.DB) error {
 			user_id INTEGER NOT NULL,
 			refresh_token_hash TEXT NOT NULL UNIQUE,
 			expires_at DATETIME NOT NULL,
-			revoke_at DATETIME,
-			create_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			revoked_at DATETIME,
+			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 		)
 	`)
