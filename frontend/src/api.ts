@@ -33,11 +33,15 @@ export class NetworkError extends Error {
   }
 }
 
-const safeFetch = async (input: RequestInfo, init?: RequestInit): Promise<Response> => {
+const safeFetch = async (
+  input: RequestInfo,
+  init?: RequestInit,
+  options?: { silent?: boolean }
+): Promise<Response> => {
   try {
     return await fetch(input, init)
   } catch {
-    onNetworkError?.()
+    if (!options?.silent) onNetworkError?.()
     throw new NetworkError()
   }
 }
@@ -170,8 +174,9 @@ export const register = async (username: string, password: string): Promise<void
 }
 
 export const apiLogout = async (): Promise<void> => {
-  await safeFetch(`${API_URL}/logout`, {
-    method: 'POST',
-    credentials: 'include',
-  })
+  await safeFetch(
+    `${API_URL}/logout`,
+    { method: 'POST', credentials: 'include' },
+    { silent: true }
+  )
 }
