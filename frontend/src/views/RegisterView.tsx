@@ -10,47 +10,29 @@ import {
   TextField,
   Typography,
 } from '@mui/material'
-import LockOutlinedIcon from '@mui/icons-material/LockOutlined'
-import { useEffect, useState } from 'react'
-import { login, NetworkError } from '../api'
-import { Link as RouterLink, useLocation, useNavigate } from 'react-router'
-import { useSetAtom } from 'jotai'
-import { currentUserAtom, tokenAtom } from '../state/auth'
+import PersonAddOutlinedIcon from '@mui/icons-material/PersonAddOutlined'
+import { useState } from 'react'
+import { NetworkError, register } from '../api'
+import { Link as RouterLink, useNavigate } from 'react-router'
 
-type LoginLocationState = { registered?: boolean } | null
+const ACCENT = '#10B981'
 
-const ACCENT = '#3B82F6'
-
-const LoginView = () => {
+const RegisterView = () => {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
-  const [info, setInfo] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const navigate = useNavigate()
-  const location = useLocation()
-  const setToken = useSetAtom(tokenAtom)
-  const setCurrentUser = useSetAtom(currentUserAtom)
 
-  useEffect(() => {
-    const state = location.state as LoginLocationState
-    if (state?.registered) {
-      setInfo('Account created. You can log in now.')
-      navigate(location.pathname, { replace: true, state: null })
-    }
-  }, [location, navigate])
-
-  const submitLogin = async () => {
+  const submitRegister = async () => {
     setBusy(true)
     setError(null)
     try {
-      const { token, user } = await login(username, password)
-      setToken(token)
-      setCurrentUser(user)
-      navigate('/')
+      await register(username, password)
+      navigate('/login', { replace: true, state: { registered: true } })
     } catch (e) {
       if (e instanceof NetworkError) return
-      setError(e instanceof Error ? e.message : 'Login failed')
+      setError(e instanceof Error ? e.message : 'Registration failed')
     } finally {
       setBusy(false)
     }
@@ -82,20 +64,20 @@ const LoginView = () => {
           component="form"
           onSubmit={(e) => {
             e.preventDefault()
-            submitLogin()
+            submitRegister()
           }}
         >
           <Stack spacing={3}>
             <Stack alignItems="center" spacing={1.5}>
               <Avatar sx={{ bgcolor: ACCENT, width: 48, height: 48 }}>
-                <LockOutlinedIcon />
+                <PersonAddOutlinedIcon />
               </Avatar>
               <Box sx={{ textAlign: 'center' }}>
                 <Typography variant="h5" fontWeight={600}>
-                  Welcome back
+                  Create your account
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                  Sign in to continue to your tasks.
+                  Start organizing your tasks in seconds.
                 </Typography>
               </Box>
             </Stack>
@@ -112,7 +94,7 @@ const LoginView = () => {
               <TextField
                 label="Password"
                 type="password"
-                autoComplete="current-password"
+                autoComplete="new-password"
                 fullWidth
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -126,18 +108,18 @@ const LoginView = () => {
               fullWidth
               disabled={busy || !username || !password}
             >
-              Sign in
+              Create account
             </Button>
 
             <Divider flexItem />
 
             <Stack alignItems="center" spacing={1.25}>
               <Typography variant="body2" color="text.secondary">
-                Don't have an account?
+                Already have an account?
               </Typography>
               <Button
                 component={RouterLink}
-                to="/register"
+                to="/login"
                 variant="outlined"
                 size="large"
                 fullWidth
@@ -151,7 +133,7 @@ const LoginView = () => {
                   },
                 }}
               >
-                Create an account
+                Sign in instead
               </Button>
             </Stack>
           </Stack>
@@ -168,18 +150,8 @@ const LoginView = () => {
           {error}
         </Alert>
       </Snackbar>
-      <Snackbar
-        open={info !== null}
-        autoHideDuration={4000}
-        onClose={() => setInfo(null)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert severity="success" onClose={() => setInfo(null)}>
-          {info}
-        </Alert>
-      </Snackbar>
     </Box>
   )
 }
 
-export default LoginView
+export default RegisterView

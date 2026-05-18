@@ -16,9 +16,30 @@ const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8080'
 const contentType = 'application/json'
 
 let onUnauthorized: (() => void) | null = null
+let onNetworkError: (() => void) | null = null
 
 export const setOnUnauthorized = (handler: () => void) => {
   onUnauthorized = handler
+}
+
+export const setOnNetworkError = (handler: () => void) => {
+  onNetworkError = handler
+}
+
+export class NetworkError extends Error {
+  constructor() {
+    super('Cannot reach server')
+    this.name = 'NetworkError'
+  }
+}
+
+const safeFetch = async (input: RequestInfo, init?: RequestInit): Promise<Response> => {
+  try {
+    return await fetch(input, init)
+  } catch {
+    onNetworkError?.()
+    throw new NetworkError()
+  }
 }
 
 const authHeaders = (extra?: Record<string, string>) => {
@@ -43,7 +64,7 @@ const refreshAccessToken = async (): Promise<string | null> => {
   if (!refreshPromise) {
     refreshPromise = (async () => {
       try {
-        const res = await fetch(`${API_URL}/refresh`, {
+        const res = await safeFetch(`${API_URL}/refresh`, {
           method: 'POST',
           credentials: 'include',
         })
@@ -63,11 +84,11 @@ const refreshAccessToken = async (): Promise<string | null> => {
 }
 
 const authFetch = async (input: RequestInfo, init?: RequestInit) => {
-  let res = await fetch(input, init)
+  let res = await safeFetch(input, init)
   if (res.status === 401) {
     const newToken = await refreshAccessToken()
     if (newToken) {
-      res = await fetch(input, withAuthHeader(init, newToken))
+      res = await safeFetch(input, withAuthHeader(init, newToken))
     }
     if (res.status === 401) {
       onUnauthorized?.()
@@ -129,7 +150,7 @@ export const login = async (
   username: string,
   password: string
 ): Promise<AuthResponse> => {
-  const res = await fetch(`${API_URL}/login`, {
+  const res = await safeFetch(`${API_URL}/login`, {
     method: 'POST',
     headers: { 'Content-Type': contentType },
     credentials: 'include',
@@ -140,7 +161,7 @@ export const login = async (
 }
 
 export const register = async (username: string, password: string): Promise<void> => {
-  const res = await fetch(`${API_URL}/register`, {
+  const res = await safeFetch(`${API_URL}/register`, {
     method: 'POST',
     headers: { 'Content-Type': contentType },
     body: JSON.stringify({ username, password }),
@@ -149,7 +170,7 @@ export const register = async (username: string, password: string): Promise<void
 }
 
 export const apiLogout = async (): Promise<void> => {
-  await fetch(`${API_URL}/logout`, {
+  await safeFetch(`${API_URL}/logout`, {
     method: 'POST',
     credentials: 'include',
   })
