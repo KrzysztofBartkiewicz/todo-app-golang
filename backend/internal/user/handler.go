@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strings"
+	"time"
 	"todo-app/backend/internal/auth"
 	"todo-app/backend/internal/response"
 )
@@ -80,9 +81,24 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	refreshToken, err := auth.MakeRefreshToken()
+	if err != nil {
+		response.WriteJSONError(w, http.StatusInternalServerError, "Failed to generate refresh token")
+		return
+	}
+
+	hashedRefreshToken := auth.HashToken(refreshToken)
+
+	err = h.repo.CreateSession(foundUser.ID, hashedRefreshToken, time.Now().Add(7*24*time.Hour))
+	if err != nil {
+		response.WriteJSONError(w, http.StatusInternalServerError, "Failed to create session")
+		return
+	}
+
 	response.WriteJSON(w, http.StatusOK, LoginResponse{
-		Token: token,
-		User:  foundUser,
+		Token:        token,
+		User:         foundUser,
+		RefreshToken: refreshToken,
 	})
 }
 

@@ -46,5 +46,21 @@ func createTables(db *sql.DB) error {
 		return err
 	}
 
+	_, err = db.Exec(`
+		CREATE TABLE IF NOT EXISTS sessions (
+			id INTEGER PRIMARY KEY,
+			user_id INTEGER NOT NULL,
+			refresh_token_hash TEXT NOT NULL UNIQUE,
+			expires_at DATETIME NOT NULL,
+			revoke_at DATETIME,
+			create_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+		)
+	`)
+
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

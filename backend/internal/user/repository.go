@@ -1,11 +1,15 @@
 package user
 
-import "database/sql"
+import (
+	"database/sql"
+	"time"
+)
 
 type UserRepository interface {
 	Create(username string, passwordHash string) (User, error)
 	FindByUsername(username string) (User, error)
 	GetMeByID(id int) (User, error)
+	CreateSession(userID int, refreshTokenHash string, expiresAt time.Time) error
 }
 
 type Repository struct {
@@ -54,4 +58,9 @@ func (r *Repository) GetMeByID(id int) (User, error) {
 	}
 
 	return user, nil
+}
+
+func (r *Repository) CreateSession(userID int, refreshTokenHash string, expiresAt time.Time) error {
+	_, err := r.db.Exec("INSERT INTO sessions (user_id, refresh_token_hash, expires_at) VALUES (?, ?, ?)", userID, refreshTokenHash, expiresAt)
+	return err
 }
