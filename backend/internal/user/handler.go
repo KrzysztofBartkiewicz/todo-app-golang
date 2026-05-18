@@ -89,16 +89,24 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 
 	hashedRefreshToken := auth.HashToken(refreshToken)
 
-	err = h.repo.CreateSession(foundUser.ID, hashedRefreshToken, time.Now().Add(7*24*time.Hour))
+	err = h.repo.CreateSession(foundUser.ID, hashedRefreshToken, time.Now().Add(auth.RefreshTokenTTL))
 	if err != nil {
 		response.WriteJSONError(w, http.StatusInternalServerError, "Failed to create session")
 		return
 	}
 
+	http.SetCookie(w, &http.Cookie{
+		Name:     "refresh_token",
+		Value:    refreshToken,
+		Path:     "/",
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+		Expires:  time.Now().Add(auth.RefreshTokenTTL),
+	})
+
 	response.WriteJSON(w, http.StatusOK, LoginResponse{
-		Token:        token,
-		User:         foundUser,
-		RefreshToken: refreshToken,
+		Token: token,
+		User:  foundUser,
 	})
 }
 
@@ -119,21 +127,19 @@ func (h *Handler) GetMe(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) Refresh(w http.ResponseWriter, r *http.Request) {
-	var req RefreshRequest
-
-	err := json.NewDecoder(r.Body).Decode(&req)
+	cookie, err := r.Cookie("refresh_token")
 	if err != nil {
-		response.WriteJSONError(w, http.StatusBadRequest, "Invalid request body")
+		response.WriteJSONError(w, http.StatusUnauthorized, "Missing refresh token")
 		return
 	}
 
-	req.RefreshToken = strings.TrimSpace(req.RefreshToken)
-	if req.RefreshToken == "" {
-		response.WriteJSONError(w, http.StatusBadRequest, "Missing refresh token")
+	refreshToken := strings.TrimSpace(cookie.Value)
+	if refreshToken == "" {
+		response.WriteJSONError(w, http.StatusUnauthorized, "Missing refresh token")
 		return
 	}
 
-	hashedRefreshToken := auth.HashToken(req.RefreshToken)
+	hashedRefreshToken := auth.HashToken(refreshToken)
 
 	session, err := h.repo.FindSessionByRefreshTokenHash(hashedRefreshToken)
 	if err != nil {

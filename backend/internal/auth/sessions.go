@@ -4,7 +4,10 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
+	"time"
 )
+
+const RefreshTokenTTL = 7 * 24 * time.Hour
 
 func MakeRefreshToken() (string, error) {
 	b := make([]byte, 32)
