@@ -1,7 +1,9 @@
 package user
 
 import (
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strings"
 	"time"
@@ -143,7 +145,11 @@ func (h *Handler) Refresh(w http.ResponseWriter, r *http.Request) {
 
 	session, err := h.repo.FindSessionByRefreshTokenHash(hashedRefreshToken)
 	if err != nil {
-		response.WriteJSONError(w, http.StatusUnauthorized, "Invalid refresh token")
+		if errors.Is(err, sql.ErrNoRows) {
+			response.WriteJSONError(w, http.StatusUnauthorized, "Invalid refresh token")
+			return
+		}
+		response.WriteJSONError(w, http.StatusInternalServerError, "Failed to look up session")
 		return
 	}
 
@@ -159,6 +165,10 @@ func (h *Handler) Refresh(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.repo.GetMeByID(session.UserID)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			response.WriteJSONError(w, http.StatusUnauthorized, "Invalid refresh token")
+			return
+		}
 		response.WriteJSONError(w, http.StatusInternalServerError, "Failed to retrieve user")
 		return
 	}
