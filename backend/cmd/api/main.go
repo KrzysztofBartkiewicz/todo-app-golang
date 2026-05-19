@@ -40,7 +40,7 @@ func main() {
 	http.Handle(
 		"/health",
 		http.TimeoutHandler(
-			server.WithRequestID(server.WithLogger(server.WithCORS(healthHandler))),
+			server.WithRequestID(server.WithLogger(healthHandler)),
 			5*time.Second,
 			"Health check timed out",
 		),
@@ -50,7 +50,7 @@ func main() {
 
 	srv := &http.Server{
 		Addr:    port,
-		Handler: nil,
+		Handler: server.WithCORS(http.DefaultServeMux),
 	}
 
 	log.Println("Server running on http://localhost" + port)
