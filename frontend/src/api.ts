@@ -33,6 +33,15 @@ export class NetworkError extends Error {
   }
 }
 
+const getErrorMessage = async (res: Response, fallback: string): Promise<string> => {
+  try {
+    const body = await res.json()
+    return body.error ?? fallback
+  } catch {
+    return fallback
+  }
+}
+
 const safeFetch = async (
   input: RequestInfo,
   init?: RequestInit,
@@ -160,7 +169,7 @@ export const login = async (
     credentials: 'include',
     body: JSON.stringify({ username, password }),
   })
-  if (!res.ok) throw new Error('Invalid credentials')
+  if (!res.ok) throw new Error(await getErrorMessage(res, 'Invalid credentials'))
   return authResponseSchema.parse(await res.json())
 }
 
@@ -170,7 +179,7 @@ export const register = async (username: string, password: string): Promise<void
     headers: { 'Content-Type': contentType },
     body: JSON.stringify({ username, password }),
   })
-  if (!res.ok) throw new Error('Registration failed')
+  if (!res.ok) throw new Error(await getErrorMessage(res, 'Registration failed'))
 }
 
 export const apiLogout = async (): Promise<void> => {
