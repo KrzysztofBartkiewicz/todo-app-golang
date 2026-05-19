@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -43,6 +44,10 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 
 	createdUser, err := h.repo.Create(req.Username, passwordHash)
 	if err != nil {
+		if errors.Is(err, ErrUsernameExists) {
+			response.WriteJSONError(w, http.StatusConflict, "Username already exists")
+			return
+		}
 		response.WriteJSONError(w, http.StatusInternalServerError, "Failed to create user")
 		return
 	}
@@ -187,10 +192,13 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 
 	refreshTokenHash := auth.HashToken(cookie.Value)
 
-	err = h.repo.RevokeSessionByRefreshTokenHash(refreshTokenHash)
+	rowsAffected, err := h.repo.RevokeSessionByRefreshTokenHash(refreshTokenHash)
 	if err != nil {
-		response.WriteJSONError(w, http.StatusInternalServerError, "Failed to revoke session")
+		response.WriteJSONError(w, http.StatusInternalServerError, "Failed to log out")
 		return
+	}
+	if rowsAffected == 0 {
+		log.Println("logout: no active session found for refresh token hash")
 	}
 
 	auth.ClearRefreshCookie(w)

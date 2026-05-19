@@ -2,8 +2,13 @@ package user
 
 import (
 	"database/sql"
+	"errors"
 	"time"
+
+	"github.com/mattn/go-sqlite3"
 )
+
+var ErrUsernameExists = errors.New("username already exists")
 
 type UserRepository interface {
 	Create(username string, passwordHash string) (User, error)
@@ -11,7 +16,7 @@ type UserRepository interface {
 	GetMeByID(id int) (User, error)
 	CreateSession(userID int, refreshTokenHash string, expiresAt time.Time) error
 	FindSessionByRefreshTokenHash(refreshTokenHash string) (Session, error)
-	RevokeSessionByRefreshTokenHash(refreshTokenHash string) error
+	RevokeSessionByRefreshTokenHash(refreshTokenHash string) (int64, error)
 }
 
 type Repository struct {
@@ -25,6 +30,10 @@ func NewRepository(db *sql.DB) *Repository {
 func (r *Repository) Create(username string, passwordHash string) (User, error) {
 	result, err := r.db.Exec("INSERT INTO users (username, password_hash) VALUES (?, ?)", username, passwordHash)
 	if err != nil {
+		var sqliteErr sqlite3.Error
+		if errors.As(err, &sqliteErr) && sqliteErr.ExtendedCode == sqlite3.ErrConstraintUnique {
+			return User{}, ErrUsernameExists
+		}
 		return User{}, err
 	}
 
@@ -83,12 +92,17 @@ func (r *Repository) FindSessionByRefreshTokenHash(refreshTokenHash string) (Ses
 	return session, nil
 }
 
-func (r *Repository) RevokeSessionByRefreshTokenHash(refreshTokenHash string) error {
-	_, err := r.db.Exec(`
+func (r *Repository) RevokeSessionByRefreshTokenHash(refreshTokenHash string) (int64, error) {
+	result, err := r.db.Exec(`
 		UPDATE sessions
 		SET revoked_at = CURRENT_TIMESTAMP
 		WHERE refresh_token_hash = ?
+		AND revoked_at IS NULL
 	`, refreshTokenHash)
 
-	return err
+	if err != nil {
+		return 0, err
+	}
+
+	return result.RowsAffected()
 }
