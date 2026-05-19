@@ -97,14 +97,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.SetCookie(w, &http.Cookie{
-		Name:     "refresh_token",
-		Value:    refreshToken,
-		Path:     "/",
-		HttpOnly: true,
-		SameSite: http.SameSiteLaxMode,
-		Expires:  time.Now().Add(auth.RefreshTokenTTL),
-	})
+	auth.SetRefreshCookie(w, refreshToken)
 
 	response.WriteJSON(w, http.StatusOK, LoginResponse{
 		Token: token,
@@ -182,4 +175,24 @@ func (h *Handler) Refresh(w http.ResponseWriter, r *http.Request) {
 	response.WriteJSON(w, http.StatusOK, RefreshResponse{
 		Token: token,
 	})
+}
+
+func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie("refresh_token")
+	if err != nil || cookie.Value == "" {
+		auth.ClearRefreshCookie(w)
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	refreshTokenHash := auth.HashToken(cookie.Value)
+
+	err = h.repo.RevokeSessionByRefreshTokenHash(refreshTokenHash)
+	if err != nil {
+		response.WriteJSONError(w, http.StatusInternalServerError, "Failed to revoke session")
+		return
+	}
+
+	auth.ClearRefreshCookie(w)
+	w.WriteHeader(http.StatusNoContent)
 }

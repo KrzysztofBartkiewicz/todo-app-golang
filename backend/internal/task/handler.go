@@ -18,29 +18,7 @@ func NewHandler(repo TaskRepository) *Handler {
 	return &Handler{repo: repo}
 }
 
-func (h *Handler) HandleTasks(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodGet:
-		h.getTasks(w, r)
-	case http.MethodPost:
-		h.createTask(w, r)
-	default:
-		response.WriteJSONError(w, http.StatusMethodNotAllowed, "Method not allowed")
-	}
-}
-
-func (h *Handler) HandleTaskByID(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodDelete:
-		h.deleteTask(w, r)
-	case http.MethodPatch:
-		h.updateTask(w, r)
-	default:
-		response.WriteJSONError(w, http.StatusMethodNotAllowed, "Method not allowed")
-	}
-}
-
-func (h *Handler) getTasks(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetTasks(w http.ResponseWriter, r *http.Request) {
 	userID, err := auth.GetUserID(r)
 
 	if err != nil {
@@ -57,7 +35,7 @@ func (h *Handler) getTasks(w http.ResponseWriter, r *http.Request) {
 	response.WriteJSON(w, http.StatusOK, tasks)
 }
 
-func (h *Handler) createTask(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) CreateTask(w http.ResponseWriter, r *http.Request) {
 	var req CreateTaskRequest
 
 	decoder := json.NewDecoder(r.Body)
@@ -103,8 +81,8 @@ func (h *Handler) createTask(w http.ResponseWriter, r *http.Request) {
 	response.WriteJSON(w, http.StatusCreated, createdTask)
 }
 
-func (h *Handler) deleteTask(w http.ResponseWriter, r *http.Request) {
-	id, err := getTaskID(r)
+func (h *Handler) DeleteTask(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		response.WriteJSONError(w, http.StatusBadRequest, "Invalid task id")
 		return
@@ -129,8 +107,8 @@ func (h *Handler) deleteTask(w http.ResponseWriter, r *http.Request) {
 	response.WriteNoContent(w)
 }
 
-func (h *Handler) updateTask(w http.ResponseWriter, r *http.Request) {
-	id, err := getTaskID(r)
+func (h *Handler) UpdateTask(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		response.WriteJSONError(w, http.StatusBadRequest, "Invalid task id")
 		return
@@ -187,7 +165,3 @@ func (h *Handler) updateTask(w http.ResponseWriter, r *http.Request) {
 	response.WriteJSON(w, http.StatusOK, updatedTask)
 }
 
-func getTaskID(r *http.Request) (int, error) {
-	idStr := strings.TrimPrefix(r.URL.Path, "/tasks/")
-	return strconv.Atoi(idStr)
-}

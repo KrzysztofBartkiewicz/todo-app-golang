@@ -11,6 +11,7 @@ type UserRepository interface {
 	GetMeByID(id int) (User, error)
 	CreateSession(userID int, refreshTokenHash string, expiresAt time.Time) error
 	FindSessionByRefreshTokenHash(refreshTokenHash string) (Session, error)
+	RevokeSessionByRefreshTokenHash(refreshTokenHash string) error
 }
 
 type Repository struct {
@@ -80,4 +81,14 @@ func (r *Repository) FindSessionByRefreshTokenHash(refreshTokenHash string) (Ses
 	}
 
 	return session, nil
+}
+
+func (r *Repository) RevokeSessionByRefreshTokenHash(refreshTokenHash string) error {
+	_, err := r.db.Exec(`
+		UPDATE sessions
+		SET revoked_at = CURRENT_TIMESTAMP
+		WHERE refresh_token_hash = ?
+	`, refreshTokenHash)
+
+	return err
 }
