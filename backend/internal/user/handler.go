@@ -73,7 +73,11 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 
 	foundUser, err := h.repo.FindByUsername(req.Username)
 	if err != nil {
-		response.WriteJSONError(w, http.StatusUnauthorized, "Invalid username or password")
+		if errors.Is(err, sql.ErrNoRows) {
+			response.WriteJSONError(w, http.StatusUnauthorized, "Invalid username or password")
+			return
+		}
+		response.WriteJSONError(w, http.StatusInternalServerError, "Failed to look up user")
 		return
 	}
 
@@ -176,6 +180,29 @@ func (h *Handler) Refresh(w http.ResponseWriter, r *http.Request) {
 		response.WriteJSONError(w, http.StatusInternalServerError, "Failed to generate token")
 		return
 	}
+
+	_, err = h.repo.RevokeSessionByRefreshTokenHash(hashedRefreshToken)
+	if err != nil {
+		response.WriteJSONError(w, http.StatusInternalServerError, "Failed to refresh token")
+		return
+	}
+
+	newRefreshToken, err := auth.MakeRefreshToken()
+	if err != nil {
+		response.WriteJSONError(w, http.StatusInternalServerError, "Failed to generate refresh token")
+		return
+	}
+
+	hashedNewRefreshToken := auth.HashToken(newRefreshToken)
+	expiresAt := time.Now().Add(auth.RefreshTokenTTL)
+
+	err = h.repo.CreateSession(user.ID, hashedNewRefreshToken, expiresAt)
+	if err != nil {
+		response.WriteJSONError(w, http.StatusInternalServerError, "Failed to create session")
+		return
+	}
+
+	auth.SetRefreshCookie(w, newRefreshToken)
 
 	response.WriteJSON(w, http.StatusOK, RefreshResponse{
 		Token: token,
