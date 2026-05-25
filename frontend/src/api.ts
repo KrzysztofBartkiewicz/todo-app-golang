@@ -100,10 +100,17 @@ const authFetch = async (input: RequestInfo, init?: RequestInit) => {
   let res = await safeFetch(input, init)
   if (res.status === 401) {
     const newToken = await refreshAccessToken()
-    if (newToken) {
-      res = await safeFetch(input, withAuthHeader(init, newToken))
+
+    if (!newToken) {
+      getDefaultStore().set(tokenAtom, null)
+      onUnauthorized?.()
+      throw new Error('Unauthorized')
     }
+
+    res = await safeFetch(input, withAuthHeader(init, newToken))
+
     if (res.status === 401) {
+      getDefaultStore().set(tokenAtom, null)
       onUnauthorized?.()
       throw new Error('Unauthorized')
     }
