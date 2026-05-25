@@ -2,6 +2,7 @@ package auth
 
 import (
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -12,6 +13,7 @@ func ClearRefreshCookie(w http.ResponseWriter) {
 		Path:     "/",
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
+		Secure:   isProduction(),
 		MaxAge:   -1,
 	})
 }
@@ -23,6 +25,11 @@ func SetRefreshCookie(w http.ResponseWriter, token string) {
 		Path:     "/",
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
+		Secure:   isProduction(),
 		Expires:  time.Now().Add(RefreshTokenTTL),
 	})
+}
+
+func isProduction() bool {
+	return os.Getenv("APP_ENV") == "production"
 }
