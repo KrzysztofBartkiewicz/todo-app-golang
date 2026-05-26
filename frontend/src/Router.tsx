@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router'
+import { createBrowserRouter, Navigate } from 'react-router'
 import MainView from './views/MainView'
 import LoginView from './views/LoginView'
 import RegisterView from './views/RegisterView'
@@ -17,6 +17,7 @@ export const router = createBrowserRouter([
         element: <RequireAuth />,
         children: [{ path: '/', element: <MainView /> }],
       },
+      { path: '*', element: <Navigate to="/" replace /> },
     ],
   },
 ])

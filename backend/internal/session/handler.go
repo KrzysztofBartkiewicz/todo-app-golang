@@ -72,24 +72,9 @@ func (h *Handler) Refresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = h.repo.RevokeSessionByRefreshTokenHash(hashedRefreshToken)
-	if err != nil {
-		response.WriteJSONError(w, http.StatusInternalServerError, "Failed to refresh token")
-		return
-	}
-
-	newRefreshToken, err := makeRefreshToken()
+	newRefreshToken, expiresAt, err := h.repo.RotateSession(hashedRefreshToken, user.ID)
 	if err != nil {
 		response.WriteJSONError(w, http.StatusInternalServerError, "Failed to generate refresh token")
-		return
-	}
-
-	hashedNewRefreshToken := hashToken(newRefreshToken)
-	expiresAt := time.Now().Add(refreshTokenTTL)
-
-	err = h.repo.CreateSession(user.ID, hashedNewRefreshToken, expiresAt)
-	if err != nil {
-		response.WriteJSONError(w, http.StatusInternalServerError, "Failed to create session")
 		return
 	}
 

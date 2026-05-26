@@ -9,6 +9,7 @@ type SessionRepository interface {
 	CreateSession(userID int, refreshTokenHash string, expiresAt time.Time) error
 	FindSessionByRefreshTokenHash(refreshTokenHash string) (Session, error)
 	RevokeSessionByRefreshTokenHash(refreshTokenHash string) (int64, error)
+	RotateSession(oldRefreshTokenHash string, userID int) (string, time.Time, error)
 }
 
 type Repository struct {
@@ -70,4 +71,58 @@ func (r *Repository) RevokeSessionByRefreshTokenHash(refreshTokenHash string) (i
 	}
 
 	return result.RowsAffected()
+}
+
+func (r *Repository) RotateSession(oldRefreshTokenHash string, userID int) (string, time.Time, error) {
+	rawToken, err := makeRefreshToken()
+	if err != nil {
+		return "", time.Time{}, err
+	}
+
+	hashedToken := hashToken(rawToken)
+	expiresAt := time.Now().Add(refreshTokenTTL)
+
+	tx, err := r.db.Begin()
+	if err != nil {
+		return "", time.Time{}, err
+	}
+
+	defer func() {
+		_ = tx.Rollback()
+	}()
+
+	result, err := tx.Exec(`
+		UPDATE sessions
+		SET revoked_at = CURRENT_TIMESTAMP
+		WHERE refresh_token_hash = ?
+		AND revoked_at IS NULL
+	`, oldRefreshTokenHash)
+
+	if err != nil {
+		return "", time.Time{}, err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return "", time.Time{}, err
+	}
+
+	if rowsAffected == 0 {
+		return "", time.Time{}, sql.ErrNoRows
+	}
+
+	_, err = tx.Exec(`
+		INSERT INTO sessions (user_id, refresh_token_hash, expires_at)
+		VALUES (?, ?, ?)
+	`, userID, hashedToken, expiresAt)
+
+	if err != nil {
+		return "", time.Time{}, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return "", time.Time{}, err
+	}
+
+	return rawToken, expiresAt, nil
 }
