@@ -36,6 +36,12 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// TODO: enforce stronger password requirements (min 8 chars, at least 1 uppercase, 1 lowercase, 1 number, 1 special char)
+	if len(req.Password) < 4 || len(req.Password) > 70 {
+		response.WriteJSONError(w, http.StatusBadRequest, "Password must be between 4 and 70 characters")
+		return
+	}
+
 	passwordHash, err := HashPassword(req.Password)
 	if err != nil {
 		response.WriteJSONError(w, http.StatusInternalServerError, "Failed to hash password")
@@ -110,7 +116,10 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 
 	response.WriteJSON(w, http.StatusOK, LoginResponse{
 		Token: token,
-		User:  foundUser,
+		User: User{
+			ID:       foundUser.ID,
+			Username: foundUser.Username,
+		},
 	})
 }
 
