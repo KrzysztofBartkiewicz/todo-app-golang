@@ -34,7 +34,7 @@ func (h *Handler) Refresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hashedRefreshToken := auth.HashToken(refreshToken)
+	hashedRefreshToken := hashToken(refreshToken)
 
 	session, err := h.repo.FindSessionByRefreshTokenHash(hashedRefreshToken)
 	if err != nil {
@@ -78,14 +78,14 @@ func (h *Handler) Refresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	newRefreshToken, err := auth.MakeRefreshToken()
+	newRefreshToken, err := makeRefreshToken()
 	if err != nil {
 		response.WriteJSONError(w, http.StatusInternalServerError, "Failed to generate refresh token")
 		return
 	}
 
-	hashedNewRefreshToken := auth.HashToken(newRefreshToken)
-	expiresAt := time.Now().Add(auth.RefreshTokenTTL)
+	hashedNewRefreshToken := hashToken(newRefreshToken)
+	expiresAt := time.Now().Add(refreshTokenTTL)
 
 	err = h.repo.CreateSession(user.ID, hashedNewRefreshToken, expiresAt)
 	if err != nil {
@@ -93,7 +93,7 @@ func (h *Handler) Refresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	auth.SetRefreshCookie(w, newRefreshToken)
+	auth.SetRefreshCookie(w, newRefreshToken, expiresAt)
 
 	response.WriteJSON(w, http.StatusOK, RefreshResponse{
 		Token: token,
@@ -108,7 +108,7 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	refreshTokenHash := auth.HashToken(cookie.Value)
+	refreshTokenHash := hashToken(cookie.Value)
 
 	rowsAffected, err := h.repo.RevokeSessionByRefreshTokenHash(refreshTokenHash)
 	if err != nil {

@@ -18,7 +18,7 @@ func ClearRefreshCookie(w http.ResponseWriter) {
 	})
 }
 
-func SetRefreshCookie(w http.ResponseWriter, token string) {
+func SetRefreshCookie(w http.ResponseWriter, token string, expiresAt time.Time) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     "refresh_token",
 		Value:    token,
@@ -26,7 +26,7 @@ func SetRefreshCookie(w http.ResponseWriter, token string) {
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
 		Secure:   isProduction(),
-		Expires:  time.Now().Add(RefreshTokenTTL),
+		Expires:  expiresAt,
 	})
 }
 

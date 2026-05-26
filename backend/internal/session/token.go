@@ -1,4 +1,4 @@
-package auth
+package session
 
 import (
 	"crypto/rand"
@@ -7,9 +7,9 @@ import (
 	"time"
 )
 
-const RefreshTokenTTL = 7 * 24 * time.Hour
+const refreshTokenTTL = 7 * 24 * time.Hour
 
-func MakeRefreshToken() (string, error) {
+func makeRefreshToken() (string, error) {
 	b := make([]byte, 32)
 	_, err := rand.Read(b)
 	if err != nil {
@@ -18,7 +18,7 @@ func MakeRefreshToken() (string, error) {
 	return hex.EncodeToString(b), nil
 }
 
-func HashToken(token string) string {
+func hashToken(token string) string {
 	sum := sha256.Sum256([]byte(token))
 	return hex.EncodeToString(sum[:])
 }

@@ -12,7 +12,7 @@ import (
 )
 
 type SessionCreator interface {
-	CreateSession(userID int, refreshTokenHash string, expiresAt time.Time) error
+	StartSession(userID int) (rawToken string, expiresAt time.Time, err error)
 }
 
 type Handler struct {
@@ -102,21 +102,13 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	refreshToken, err := auth.MakeRefreshToken()
-	if err != nil {
-		response.WriteJSONError(w, http.StatusInternalServerError, "Failed to generate refresh token")
-		return
-	}
-
-	hashedRefreshToken := auth.HashToken(refreshToken)
-
-	err = h.sessionCreator.CreateSession(foundUser.ID, hashedRefreshToken, time.Now().Add(auth.RefreshTokenTTL))
+	refreshToken, expiresAt, err := h.sessionCreator.StartSession(foundUser.ID)
 	if err != nil {
 		response.WriteJSONError(w, http.StatusInternalServerError, "Failed to create session")
 		return
 	}
 
-	auth.SetRefreshCookie(w, refreshToken)
+	auth.SetRefreshCookie(w, refreshToken, expiresAt)
 
 	response.WriteJSON(w, http.StatusOK, LoginResponse{
 		Token: token,

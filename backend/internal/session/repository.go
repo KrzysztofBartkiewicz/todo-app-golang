@@ -19,6 +19,23 @@ func NewRepository(db *sql.DB) *Repository {
 	return &Repository{db: db}
 }
 
+func (r *Repository) StartSession(userID int) (string, time.Time, error) {
+	rawToken, err := makeRefreshToken()
+	if err != nil {
+		return "", time.Time{}, err
+	}
+
+	hashedToken := hashToken(rawToken)
+	expiresAt := time.Now().Add(refreshTokenTTL)
+
+	err = r.CreateSession(userID, hashedToken, expiresAt)
+	if err != nil {
+		return "", time.Time{}, err
+	}
+
+	return rawToken, expiresAt, nil
+}
+
 func (r *Repository) FindSessionByRefreshTokenHash(refreshTokenHash string) (Session, error) {
 	row := r.db.QueryRow(`
 		SELECT id, user_id, refresh_token_hash, expires_at, revoked_at, created_at
