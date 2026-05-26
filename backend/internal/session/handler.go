@@ -56,7 +56,7 @@ func (h *Handler) Refresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.userRepo.GetMeByID(session.UserID)
+	user, err := h.userRepo.FindByID(session.UserID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			response.WriteJSONError(w, http.StatusUnauthorized, "Invalid refresh token")

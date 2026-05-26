@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"log"
 	"net/http"
 	"os"
@@ -39,15 +38,6 @@ func main() {
 	userRepo := user.NewRepository(db)
 	sessionRepo := session.NewRepository(db)
 
-	http.Handle(
-		"/health",
-		http.TimeoutHandler(
-			server.WithRequestID(server.WithLogger(healthHandler)),
-			5*time.Second,
-			"Health check timed out",
-		),
-	)
-
 	server.RegisterRoutes(tasksRepo, userRepo, sessionRepo)
 
 	srv := &http.Server{
@@ -77,15 +67,4 @@ func main() {
 	}
 
 	log.Println("Server stopped gracefully")
-}
-
-func healthHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
-	err := json.NewEncoder(w).Encode(map[string]string{
-		"status": "ok",
-	})
-	if err != nil {
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
-	}
 }

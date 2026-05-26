@@ -12,7 +12,7 @@ var ErrUsernameExists = errors.New("username already exists")
 type UserRepository interface {
 	Create(username string, passwordHash string) (User, error)
 	FindByUsername(username string) (User, error)
-	GetMeByID(id int) (User, error)
+	FindByID(id int) (User, error)
 }
 
 type Repository struct {
@@ -39,9 +39,8 @@ func (r *Repository) Create(username string, passwordHash string) (User, error) 
 	}
 
 	return User{
-		ID:           int(id),
-		Username:     username,
-		PasswordHash: passwordHash,
+		ID:       int(id),
+		Username: username,
 	}, nil
 }
 
@@ -56,7 +55,7 @@ func (r *Repository) FindByUsername(username string) (User, error) {
 	return user, nil
 }
 
-func (r *Repository) GetMeByID(id int) (User, error) {
+func (r *Repository) FindByID(id int) (User, error) {
 	row := r.db.QueryRow("SELECT id, username FROM users WHERE id = ?", id)
 	var user User
 	err := row.Scan(&user.ID, &user.Username)

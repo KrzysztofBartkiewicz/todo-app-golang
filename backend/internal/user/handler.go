@@ -134,7 +134,7 @@ func (h *Handler) GetMe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.repo.GetMeByID(userID)
+	user, err := h.repo.FindByID(userID)
 	if err != nil {
 		response.WriteJSONError(w, http.StatusInternalServerError, "Failed to retrieve user")
 		return
