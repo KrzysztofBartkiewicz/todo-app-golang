@@ -11,6 +11,7 @@ import (
 	"todo-app/backend/internal/auth"
 	"todo-app/backend/internal/database"
 	"todo-app/backend/internal/server"
+	"todo-app/backend/internal/session"
 	"todo-app/backend/internal/task"
 	"todo-app/backend/internal/user"
 
@@ -36,6 +37,7 @@ func main() {
 
 	tasksRepo := task.NewRepository(db)
 	userRepo := user.NewRepository(db)
+	sessionRepo := session.NewRepository(db)
 
 	http.Handle(
 		"/health",
@@ -46,7 +48,7 @@ func main() {
 		),
 	)
 
-	server.RegisterRoutes(tasksRepo, userRepo)
+	server.RegisterRoutes(tasksRepo, userRepo, sessionRepo)
 
 	srv := &http.Server{
 		Addr:    port,

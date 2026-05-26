@@ -3,7 +3,6 @@ package user
 import (
 	"database/sql"
 	"errors"
-	"time"
 
 	"github.com/mattn/go-sqlite3"
 )
@@ -14,9 +13,6 @@ type UserRepository interface {
 	Create(username string, passwordHash string) (User, error)
 	FindByUsername(username string) (User, error)
 	GetMeByID(id int) (User, error)
-	CreateSession(userID int, refreshTokenHash string, expiresAt time.Time) error
-	FindSessionByRefreshTokenHash(refreshTokenHash string) (Session, error)
-	RevokeSessionByRefreshTokenHash(refreshTokenHash string) (int64, error)
 }
 
 type Repository struct {
@@ -69,40 +65,4 @@ func (r *Repository) GetMeByID(id int) (User, error) {
 	}
 
 	return user, nil
-}
-
-func (r *Repository) CreateSession(userID int, refreshTokenHash string, expiresAt time.Time) error {
-	_, err := r.db.Exec("INSERT INTO sessions (user_id, refresh_token_hash, expires_at) VALUES (?, ?, ?)", userID, refreshTokenHash, expiresAt)
-	return err
-}
-
-func (r *Repository) FindSessionByRefreshTokenHash(refreshTokenHash string) (Session, error) {
-	row := r.db.QueryRow(`
-		SELECT id, user_id, refresh_token_hash, expires_at, revoked_at, created_at
-		FROM sessions
-		WHERE refresh_token_hash = ?
-	`, refreshTokenHash)
-
-	var session Session
-	err := row.Scan(&session.ID, &session.UserID, &session.RefreshTokenHash, &session.ExpiresAt, &session.RevokedAt, &session.CreatedAt)
-	if err != nil {
-		return Session{}, err
-	}
-
-	return session, nil
-}
-
-func (r *Repository) RevokeSessionByRefreshTokenHash(refreshTokenHash string) (int64, error) {
-	result, err := r.db.Exec(`
-		UPDATE sessions
-		SET revoked_at = CURRENT_TIMESTAMP
-		WHERE refresh_token_hash = ?
-		AND revoked_at IS NULL
-	`, refreshTokenHash)
-
-	if err != nil {
-		return 0, err
-	}
-
-	return result.RowsAffected()
 }
